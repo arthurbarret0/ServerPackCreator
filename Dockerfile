@@ -1,4 +1,4 @@
-FROM ghcr.io/griefed/baseimage-ubuntu-jdk17-kotlin:1.0.4
+FROM ghcr.io/griefed/baseimage-ubuntu-jdk17-kotlin:1.0.12
 
 ARG VERSION=dev
 

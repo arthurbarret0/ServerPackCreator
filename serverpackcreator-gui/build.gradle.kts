@@ -9,7 +9,7 @@ repositories {
 
 dependencies {
     api(project(":serverpackcreator-api"))
-    api("commons-io:commons-io:2.14.0")
+    api("commons-io:commons-io:2.15.1")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
     api("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
     implementation(project(":serverpackcreator-updater"))

@@ -46,8 +46,8 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation("org.jetbrains.kotlin:kotlin-test:1.9.10")
-                implementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
-                implementation("org.junit.jupiter:junit-jupiter-engine:5.10.0")
+                implementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
+                implementation("org.junit.jupiter:junit-jupiter-engine:5.10.1")
             }
         }
 // Uncomment if you wish to start developing the JS component

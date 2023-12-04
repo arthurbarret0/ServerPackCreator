@@ -14,7 +14,7 @@ variables:
   CACHE_KEY: "cache-$CI_COMMIT_REF_SLUG"
 
 services:
-  - name: docker.griefed.dev/griefed/gitlab-ci-cd:2.2.9
+  - name: docker.griefed.dev/griefed/gitlab-ci-cd:2.2.16
     alias: docker
 
 workflow:
@@ -104,7 +104,7 @@ Build Test:
 
 Generate Release:
   stage: Release
-  image: docker.griefed.dev/griefed/gitlab-ci-cd:2.2.9
+  image: docker.griefed.dev/griefed/gitlab-ci-cd:2.2.16
   needs:
     - job: Build Test
       artifacts: false

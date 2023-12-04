@@ -37,7 +37,7 @@ kotlin {
                 api("com.fasterxml.jackson.core:jackson-databind:2.15.3")
                 api("net.lingala.zip4j:zip4j:2.11.5")
                 api("org.apache.logging.log4j:log4j-api-kotlin:1.3.0")
-                api("org.apache.logging.log4j:log4j-core:2.21.0")
+                api("org.apache.logging.log4j:log4j-core:2.22.0")
                 api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 api("org.pf4j:pf4j:3.10.0")
             }

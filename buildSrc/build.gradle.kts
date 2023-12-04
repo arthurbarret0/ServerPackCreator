@@ -26,7 +26,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-gradle-plugin:2.7.10")
     implementation("org.jetbrains.kotlin:kotlin-allopen:1.9.10")
     implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.9.10")
-    implementation("org.panteleyev:jpackage-gradle-plugin:1.5.2")
+    implementation("org.panteleyev:jpackage-gradle-plugin:1.6.0")
     implementation("com.github.jk1:gradle-license-report:2.5")
     implementation("org.siouan.frontend-jdk11:org.siouan.frontend-jdk11.gradle.plugin:6.0.0")
 

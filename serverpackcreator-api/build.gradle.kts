@@ -15,7 +15,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 api("io.github.microutils:kotlin-logging:3.0.5")
-                api("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
+                api("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
                 api("de.jensklingenberg.ktorfit:ktorfit-lib:1.9.0")
                 api("de.comahe.i18n4k:i18n4k-core:0.6.2")
             }

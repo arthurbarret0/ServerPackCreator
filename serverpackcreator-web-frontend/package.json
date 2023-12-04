@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@quasar/cli": "2.3.0",
-    "@quasar/extras": "1.16.7",
+    "@quasar/extras": "1.16.9",
     "axios": "1.5.1",
     "core-js": "3.33.1",
     "quasar": "2.13.0",

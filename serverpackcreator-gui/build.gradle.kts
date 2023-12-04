@@ -26,7 +26,7 @@ dependencies {
     api("com.formdev:svgSalamander:1.1.4")
     api("net.java.balloontip:balloontip:1.2.4.1")
     api("com.cronutils:cron-utils:9.2.1")
-    api("tokyo.northside:tipoftheday:0.4.2")
+    api("tokyo.northside:tipoftheday:0.4.3")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")

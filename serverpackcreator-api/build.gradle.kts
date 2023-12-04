@@ -32,7 +32,7 @@ kotlin {
                 implementation("org.jetbrains.kotlin:kotlin-bom")
                 implementation("org.jetbrains.kotlin:kotlin-stdlib")
                 implementation(files("${layout.buildDirectory.asFile.get()}/resources/"))
-                api("de.comahe.i18n4k:i18n4k-core-jvm:0.6.2")
+                api("de.comahe.i18n4k:i18n4k-core-jvm:0.7.0")
                 api("com.electronwill.night-config:toml:3.6.7")
                 api("com.fasterxml.jackson.core:jackson-databind:2.15.3")
                 api("net.lingala.zip4j:zip4j:2.11.5")

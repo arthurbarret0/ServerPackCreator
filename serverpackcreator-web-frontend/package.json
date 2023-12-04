@@ -42,7 +42,7 @@
     "@quasar/app": "3.3.3",
     "eslint": "8.52.0",
     "@types/node": "20.8.7",
-    "eslint-config-prettier": "9.0.0",
+    "eslint-config-prettier": "9.1.0",
     "eslint-plugin-vue": "9.17.0",
     "eslint-webpack-plugin": "4.0.1",
     "minimist": "1.2.8"

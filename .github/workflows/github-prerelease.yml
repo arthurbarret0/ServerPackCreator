@@ -274,7 +274,7 @@ jobs:
         run: dir serverpackcreator-app\build\dist
 
       - name: Archive
-        uses: thedoctor0/zip-release@0.7.1
+        uses: thedoctor0/zip-release@0.7.6
         with:
           type: 'zip'
           directory: serverpackcreator-app/build/dist

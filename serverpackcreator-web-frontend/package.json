@@ -41,7 +41,7 @@
     "@babel/eslint-parser": "7.22.15",
     "@quasar/app": "3.3.3",
     "eslint": "8.52.0",
-    "@types/node": "20.8.7",
+    "@types/node": "20.10.3",
     "eslint-config-prettier": "9.0.0",
     "eslint-plugin-vue": "9.17.0",
     "eslint-webpack-plugin": "4.0.1",
@@ -59,7 +59,7 @@
     "last 5 Opera versions"
   ],
   "engines": {
-    "node": "^18.0.0",
+    "node": "^20.0.0",
     "npm": "^9.0.0",
     "yarn": "^1.22.11"
   }

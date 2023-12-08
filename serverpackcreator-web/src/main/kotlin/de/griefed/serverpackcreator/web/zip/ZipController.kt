@@ -19,7 +19,6 @@
  */
 package de.griefed.serverpackcreator.web.zip
 
-import com.google.common.net.HttpHeaders
 import de.griefed.serverpackcreator.api.ApiProperties
 import de.griefed.serverpackcreator.api.ConfigCheck
 import de.griefed.serverpackcreator.api.ConfigurationHandler
@@ -27,6 +26,7 @@ import de.griefed.serverpackcreator.api.utilities.common.Utilities
 import de.griefed.serverpackcreator.api.utilities.common.deleteQuietly
 import de.griefed.serverpackcreator.web.NotificationResponse
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile

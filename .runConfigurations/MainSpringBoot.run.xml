@@ -1,6 +1,5 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="MainSpringBoot" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
-    <option name="ACTIVE_PROFILES" />
     <module name="serverpackcreator.serverpackcreator-app.main" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="de.griefed.serverpackcreator.web.WebService" />
     <method v="2">

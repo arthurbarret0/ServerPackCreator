@@ -81,7 +81,7 @@ class ServerPackCreator(private val args: Array<String>) {
         )
     }
 
-    fun run(mode: Mode = Mode.GUI) {
+    fun run(mode: Mode) {
         log.info("App information:")
         log.info("App Folder:      ${appInfo.jarFolder}")
         log.info("App Path:        ${appInfo.jarFile.absolutePath}")

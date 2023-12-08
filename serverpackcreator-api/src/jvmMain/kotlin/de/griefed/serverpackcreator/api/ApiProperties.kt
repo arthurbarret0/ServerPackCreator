@@ -1182,14 +1182,14 @@ actual class ApiProperties(
         }
 
     /**
-     * Path to the SQLite database used by the webservice-side of ServerPackCreator.
+     * Path to the PostgreSQL database used by the webservice-side of ServerPackCreator.
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    var jdbcDatabaseUrl: String = "jdbc:sqlite:serverpackcreator.db"
+    var jdbcDatabaseUrl: String = "jdbc:postgresql://localhost:5432/serverpackcreator"
         get() {
-            var dbPath = internalProps.getProperty(pSpringDatasourceUrl, "").replace("jdbc:sqlite:", "")
+            var dbPath = internalProps.getProperty(pSpringDatasourceUrl, "")
             if (dbPath.isEmpty()) {
-                dbPath = "jdbc:sqlite:${File(homeDirectory, "serverpackcreator.db").absoluteFile}"
+                dbPath = "jdbc:postgresql://localhost:5432/serverpackcreator"
             }
             internalProps.setProperty(pSpringDatasourceUrl, dbPath)
             field = dbPath

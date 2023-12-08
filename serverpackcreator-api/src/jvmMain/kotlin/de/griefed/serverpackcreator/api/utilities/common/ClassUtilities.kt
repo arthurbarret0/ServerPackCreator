@@ -20,16 +20,22 @@
 package de.griefed.serverpackcreator.api.utilities.common
 
 import net.lingala.zip4j.ZipFile
+import org.springframework.boot.loader.jar.NestedJarFile
 import java.io.File
+import java.net.JarURLConnection
 import java.net.URI
 import java.net.URL
 import java.nio.file.Paths
+import java.util.*
 
 private val jar = "^jar:(file:.*[.]jar)!/.*".toRegex()
 private val jarJar = "^(file:.*[.]jar)!.*[.]jar".toRegex()
+private val jarNested = "^jar:nested:(.*[.]jar)!/.*".toRegex()
+private val jarJarNEsted = "^(file:.*[.]jar)!.*[.]jar".toRegex()
 private val nested = ".*[.]jar!.*[.]jar".toRegex()
 private val tmpDir = System.getProperty("java.io.tmpdir")
 private const val JAR_FILE = "jar:file:"
+private const val JAR_NESTED = "jar:nested"
 private const val JAR = "file:"
 
 /**
@@ -46,35 +52,24 @@ private const val JAR = "file:"
  */
 @Throws(JarAccessException::class)
 fun <T : Any> Class<T>.source(
-    rootOnly: Boolean = false,
     tempDir: File = File(tmpDir)
 ): File {
-    val clazz = this.simpleName + ".class"
-    val classResource: URL = this.getResource(clazz) ?: throw JarAccessException("Class resource is null")
+    val clazz = "$simpleName.class"
+    val classResource: URL = getResource(clazz) ?: throw JarAccessException("Class resource is null")
     val url = classResource.toString()
-    var source: File? = null
-    if (url.startsWith(JAR_FILE)) {
 
-        var path = url.replace(jar, "$1")
-        if (rootOnly && path.matches(jarJar)) {
-            path = path.replace(jarJar, "$1")
-        }
-
-        try {
-            val uri = URI(path)
-            source = Paths.get(uri).toFile()
-        } catch (e: Exception) {
-            throw JarAccessException("Invalid Jar File URL String")
-        }
-
-    } else if (url.startsWith(JAR)) {
+    val source: File?
+    if (url.startsWith(JAR)) {
         try {
             val uri = URI(url)
             val file = Paths.get(uri).toFile()
             source = file.parentFile
         } catch (e: Exception) {
-            throw JarAccessException("Invalid Jar File URL String")
+            throw JarAccessException("Invalid Jar File URL String at JAR: $url")
         }
+    } else {
+        val jar = (classResource.openConnection() as JarURLConnection).jarFile as NestedJarFile
+        source = File(jar.name)
     }
 
     if (source != null) {
@@ -95,5 +90,5 @@ fun <T : Any> Class<T>.source(
         }
     }
 
-    throw JarAccessException("Invalid Jar File URL String.")
+    throw JarAccessException("Invalid Jar File URL String: clazz: $clazz, classResource: $classResource, url: $url")
 }

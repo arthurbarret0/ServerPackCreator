@@ -28,8 +28,15 @@ import de.griefed.serverpackcreator.api.versionmeta.VersionMeta
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
+import org.springframework.jdbc.datasource.DriverManagerDataSource
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
 import java.io.File
+import java.util.*
+import javax.sql.DataSource
 import javax.xml.parsers.DocumentBuilderFactory
+
 
 /**
  * Bean configuration for running ServerPackCreator as a webservice. This class provides beans for a
@@ -220,4 +227,39 @@ class BeanConfiguration @Autowired constructor() {
     fun documentBuilder(): DocumentBuilderFactory {
         return apiWrapper().documentBuilderFactory
     }
+
+    @Autowired
+    var env: Environment? = null
+
+    /*@Bean
+    fun dataSource(): DataSource {
+        val dataSource = DriverManagerDataSource()
+        env!!.getProperty("spring.datasource.driver-class-name")?.let { dataSource.setDriverClassName(it) }
+        dataSource.url = env!!.getProperty("spring.datasource.url")
+        return dataSource
+    }
+
+    @Bean
+    fun entityManagerFactory(): LocalContainerEntityManagerFactoryBean {
+        val em = LocalContainerEntityManagerFactoryBean()
+        em.setDataSource(dataSource())
+        em.setPackagesToScan(*arrayOf("de.griefed.serverpackcreator.web"))
+        em.jpaVendorAdapter = HibernateJpaVendorAdapter()
+        em.setJpaProperties(additionalProperties())
+        return em
+    }
+
+    fun additionalProperties(): Properties {
+        val hibernateProperties = Properties()
+        if (env!!.getProperty("spring.jpa.hibernate.ddl-auto") != null) {
+            hibernateProperties.setProperty("hibernate.hbm2ddl.auto", env!!.getProperty("spring.jpa.hibernate.ddl-auto"))
+        }
+        if (env!!.getProperty("spring.jpa.database-platform") != null) {
+            hibernateProperties.setProperty("hibernate.dialect", env!!.getProperty("spring.jpa.database-platform"))
+        }
+        if (env!!.getProperty("hibernate.show_sql") != null) {
+            hibernateProperties.setProperty("hibernate.show_sql", env!!.getProperty("hibernate.show_sql"))
+        }
+        return hibernateProperties
+    }*/
 }

@@ -32,7 +32,7 @@ kotlin {
                 implementation("org.jetbrains.kotlin:kotlin-bom")
                 implementation("org.jetbrains.kotlin:kotlin-stdlib")
                 implementation(files("${layout.buildDirectory.asFile.get()}/resources/"))
-                api("org.springframework.boot:spring-boot-loader:3.2.0")
+                //api("org.springframework.boot:spring-boot-loader:3.2.0")
                 api("de.comahe.i18n4k:i18n4k-core-jvm:0.6.2")
                 api("com.electronwill.night-config:toml:3.6.7")
                 api("com.fasterxml.jackson.core:jackson-databind:2.15.3")

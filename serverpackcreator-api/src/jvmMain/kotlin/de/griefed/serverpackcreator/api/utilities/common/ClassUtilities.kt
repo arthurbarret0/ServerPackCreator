@@ -20,7 +20,6 @@
 package de.griefed.serverpackcreator.api.utilities.common
 
 import net.lingala.zip4j.ZipFile
-import org.springframework.boot.loader.jar.NestedJarFile
 import java.io.File
 import java.net.JarURLConnection
 import java.net.URI
@@ -31,7 +30,7 @@ import java.util.*
 private val jar = "^jar:(file:.*[.]jar)!/.*".toRegex()
 private val jarJar = "^(file:.*[.]jar)!.*[.]jar".toRegex()
 private val jarNested = "^jar:nested:(.*[.]jar)!/.*".toRegex()
-private val jarJarNEsted = "^(file:.*[.]jar)!.*[.]jar".toRegex()
+private val jarJarNested = "^(file:.*[.]jar)!.*[.]jar".toRegex()
 private val nested = ".*[.]jar!.*[.]jar".toRegex()
 private val tmpDir = System.getProperty("java.io.tmpdir")
 private const val JAR_FILE = "jar:file:"
@@ -68,7 +67,7 @@ fun <T : Any> Class<T>.source(
             throw JarAccessException("Invalid Jar File URL String at JAR: $url")
         }
     } else {
-        val jar = (classResource.openConnection() as JarURLConnection).jarFile as NestedJarFile
+        val jar = (classResource.openConnection() as JarURLConnection).jarFile
         source = File(jar.name)
     }
 

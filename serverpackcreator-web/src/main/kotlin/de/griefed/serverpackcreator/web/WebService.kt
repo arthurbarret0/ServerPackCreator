@@ -21,7 +21,6 @@ package de.griefed.serverpackcreator.web
 
 import de.griefed.serverpackcreator.api.ApiWrapper
 import org.apache.logging.log4j.kotlin.cachedLoggerOf
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.ConfigurableApplicationContext
@@ -32,7 +31,7 @@ import java.sql.SQLException
 
 @SpringBootApplication
 @EnableScheduling
-class WebService @Autowired constructor(private val api: ApiWrapper) {
+class WebService(private val api: ApiWrapper) {
     private val log = cachedLoggerOf(this.javaClass)
     private var springBootApplicationContext: ConfigurableApplicationContext? = null
 
@@ -48,7 +47,6 @@ class WebService @Autowired constructor(private val api: ApiWrapper) {
             temp[temp.lastIndex] = lastIndex
             temp.toList().toTypedArray()
         }
-        checkDatabase()
         log.debug("Running webservice with args:${springArgs.contentToString()}")
         log.debug("Application name: ${getSpringBootApplicationContext(springArgs).applicationName}")
         log.debug("Property sources:")
@@ -81,34 +79,6 @@ class WebService @Autowired constructor(private val api: ApiWrapper) {
             springBootApplicationContext = runApplication<WebService>(*args)
         }
         return springBootApplicationContext!!
-    }
-
-    /**
-     * Ensures serverpackcreator.db exists. If the database does not exist, it is created.
-     *
-     * @author Griefed
-     */
-    fun checkDatabase() {
-        var connection: Connection? = null
-        try {
-            connection = DriverManager.getConnection(
-                "jdbc:sqlite:${api.apiProperties.serverPackCreatorDatabase}"
-            )
-            val databaseMetaData = connection.metaData
-            log.debug("Database driver name:     ${databaseMetaData.driverName}")
-            log.debug("Database driver version:  ${databaseMetaData.driverVersion}")
-            log.debug("Database product name:    ${databaseMetaData.databaseProductName}")
-            log.debug("Database product version: ${databaseMetaData.databaseProductVersion}")
-        } catch (ignored: SQLException) {
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.close()
-                } catch (ex: SQLException) {
-                    log.error("Couldn't close SQL connection", ex)
-                }
-            }
-        }
     }
 }
 

@@ -145,7 +145,6 @@ actual class ApiProperties(
         jarInformation.jarFolder.absoluteFile
     }
 
-    @Suppress("SpellCheckingInspection")
     private var fallbackModsWhitelist = TreeSet(
         listOf(
             "Ping-Wheel-"
@@ -190,6 +189,7 @@ actual class ApiProperties(
             "Controller Support-",
             "Controlling-",
             "CraftPresence-",
+            "Create_Questing-",
             "CullLessLeaves-Reforged-",
             "CustomCursorMod-",
             "CustomMainMenu-",
@@ -1181,30 +1181,27 @@ actual class ApiProperties(
         }
 
     /**
-     * Path to the SQLite database used by the webservice-side of ServerPackCreator.
+     * Path to the PostgreSQL database used by the webservice-side of ServerPackCreator.
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    var jdbcDatabaseUrl: String = "jdbc:sqlite:serverpackcreator.db"
+    var jdbcDatabaseUrl: String = "jdbc:postgresql://localhost:5432/serverpackcreator"
         get() {
             var dbPath = internalProps.getProperty(pSpringDatasourceUrl, "")
-            if (dbPath.replace("jdbc:sqlite:", "").isEmpty()) {
-                dbPath = "jdbc:sqlite:${File(homeDirectory, "serverpackcreator.db").absoluteFile}"
-            }
-            if (!dbPath.startsWith("jdbc:sqlite:")) {
-                dbPath = "jdbc:sqlite:$dbPath"
+            if (dbPath.isEmpty()) {
+                dbPath = "jdbc:postgresql://localhost:5432/serverpackcreator"
             }
             internalProps.setProperty(pSpringDatasourceUrl, dbPath)
             field = dbPath
             return field
         }
         set(value) {
-            if (!value.startsWith("jdbc:sqlite:")) {
-                internalProps.setProperty(pSpringDatasourceUrl, "jdbc:sqlite:$value")
+            if (!value.startsWith("jdbc:postgresql:")) {
+                internalProps.setProperty(pSpringDatasourceUrl, "jdbc:postgresql:$value")
             } else {
                 internalProps.setProperty(pSpringDatasourceUrl, value)
             }
             field = internalProps.getProperty(pSpringDatasourceUrl)
-            log.info("Set database path to: $field.")
+            log.info("Set database url to: $field.")
             log.warn("Restart ServerPackCreator for this change to take effect.")
         }
 

@@ -131,9 +131,6 @@ class LoggingConfig : ConfigurationFactory() {
         }
     }
 
-    /**
-     * @author Griefed
-     */
     override fun getSupportedTypes() = suffixes
 
     /**
@@ -202,9 +199,6 @@ class LoggingConfig : ConfigurationFactory() {
         return CustomXmlConfiguration(loggerContext, source)
     }
 
-    /**
-     * @author Griefed
-     */
     private fun getXmlConfig(sourceFile: File, loggerContext: LoggerContext): CustomXmlConfiguration {
         val configSource: ConfigurationSource
         val stream = sourceFile.inputStream()

@@ -19,8 +19,12 @@
  */
 package de.griefed.serverpackcreator.web.serverpack
 
+import de.griefed.serverpackcreator.web.dto.ServerPack
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.Resource
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -32,9 +36,9 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @CrossOrigin(origins = ["*"])
-@RequestMapping("/api/v1/packs")
-@Suppress("unused")
+@RequestMapping("/api/v2/serverpacks")
 class ServerPackController @Autowired constructor(private val serverPackService: ServerPackService) {
+
     /**
      * GET request for downloading a server pack by the id in the database.
      *
@@ -43,8 +47,21 @@ class ServerPackController @Autowired constructor(private val serverPackService:
      * @author Griefed
      */
     @GetMapping(value = ["/download/{id}"], produces = ["application/zip"])
-    fun downloadServerPack(@PathVariable id: Int): ResponseEntity<Resource?> {
-        return serverPackService.downloadServerPackById(id)
+    @ResponseBody
+    fun downloadServerPack(@PathVariable id: Int): ResponseEntity<Resource> {
+        val serverPack = serverPackService.getServerPack(id)
+        return if (serverPack.isPresent && serverPack.get().data != null) {
+            serverPackService.updateDownloadCounter(serverPack.get())
+            ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .header(
+                    HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=\"${serverPack.get().modpack!!.name}_server_pack.zip\""
+                )
+                .body(ByteArrayResource(serverPack.get().data!!))
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 
     /**
@@ -53,12 +70,13 @@ class ServerPackController @Autowired constructor(private val serverPackService:
      * @return A list of all available server packs on this instance.
      * @author Griefed
      */
-    @get:GetMapping("all")
-    val allServerPacks: ResponseEntity<List<ServerPackModel>>
-        get() = ResponseEntity.ok().header("Content-Type", "application/json").body(
+    @GetMapping("/all", produces = ["application/json"])
+    @ResponseBody
+    fun getAllServerPacks(): ResponseEntity<List<ServerPack>> {
+        return ResponseEntity.ok().header("Content-Type", "application/json").body(
             serverPackService.getServerPacks()
         )
-
+    }
 
     /**
      * GET request for voting whether a server pack works or not.
@@ -68,8 +86,9 @@ class ServerPackController @Autowired constructor(private val serverPackService:
      * @return ResponseEntity OK/BadRequest/NotFound
      * @author Griefed
      */
-    @GetMapping("vote/{voting}")
-    fun voteForServerPack(@PathVariable("voting") voting: String): ResponseEntity<Any> {
-        return serverPackService.voteForServerPack(voting)
+    @GetMapping("/vote/{id:[0-9]+}&{vote}")
+    @ResponseBody
+    fun voteForServerPack(@PathVariable("id") id: Int, @PathVariable("vote") vote: String): ResponseEntity<Any> {
+        return serverPackService.voteForServerPack(id, vote)
     }
 }

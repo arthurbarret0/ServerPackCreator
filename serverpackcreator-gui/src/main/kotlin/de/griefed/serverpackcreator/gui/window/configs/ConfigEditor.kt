@@ -292,9 +292,6 @@ class ConfigEditor(
         componentResizer.registerComponent(advSetScriptKVPairsSetting.scrollPanel, "cell 2 9 1 3,grow,w 10:500:,h %s!")
     }
 
-    /**
-     * @author Griefed
-     */
     private fun selectModpackDirectory() {
         val chooser = if (File(getModpackDirectory()).isDirectory) {
             ModpackChooser(File(getModpackDirectory()), guiProps.defaultFileChooserDimension)
@@ -311,9 +308,6 @@ class ConfigEditor(
         }
     }
 
-    /**
-     * @author Griefed
-     */
     private fun selectServerProperties() {
         val serverPropertiesChooser = if (File(getServerPropertiesPath()).isFile) {
             ServerPropertiesChooser(File(getServerPropertiesPath()), guiProps.defaultFileChooserDimension)
@@ -325,9 +319,6 @@ class ConfigEditor(
         }
     }
 
-    /**
-     * @author Griefed
-     */
     private fun selectServerIcon() {
         val serverIconChooser = if (File(getServerIconPath()).isFile) {
             ServerIconChooser(File(getServerIconPath()), guiProps.defaultFileChooserDimension)
@@ -339,47 +330,29 @@ class ConfigEditor(
         }
     }
 
-    /**
-     * @author Griefed
-     */
     override fun setClientSideMods(entries: MutableList<String>) {
         advSetExclusionsSetting.text = apiWrapper.utilities.stringUtilities.buildString(entries)
         validateInputFields()
     }
 
-    /**
-     * @author Griefed
-     */
     override fun setWhitelist(entries: MutableList<String>) {
         advSetWhitelistSetting.text = apiWrapper.utilities.stringUtilities.buildString(entries)
         validateInputFields()
     }
 
-    /**
-     * @author Griefed
-     */
     override fun setInclusions(entries: MutableList<InclusionSpecification>) {
         inclusionsSetting.setServerFiles(entries)
 
     }
 
-    /**
-     * @author Griefed
-     */
     override fun setIconInclusionTicked(ticked: Boolean) {
         includeIconSetting.isSelected = ticked
     }
 
-    /**
-     * @author Griefed
-     */
     override fun setJavaArguments(javaArguments: String) {
         advSetJavaArgsSetting.text = javaArguments
     }
 
-    /**
-     * @author Griefed
-     */
     override fun setMinecraftVersion(version: String) {
         for (i in 0 until mcVersionSetting.model.size) {
             if (mcVersionSetting.model.getElementAt(i) == version) {
@@ -389,9 +362,6 @@ class ConfigEditor(
         }
     }
 
-    /**
-     * @author Griefed
-     */
     override fun setModloader(modloader: String) {
         when (modloader) {
             "Fabric" -> modloaderSetting.selectedIndex = 0
@@ -403,9 +373,6 @@ class ConfigEditor(
         setModloaderVersionsModel()
     }
 
-    /**
-     * @author Griefed
-     */
     override fun setModloaderVersion(version: String) {
         for (i in 0 until modloaderVersionSetting.model.size) {
             if (modloaderVersionSetting.model.getElementAt(i) == version) {
@@ -415,30 +382,18 @@ class ConfigEditor(
         }
     }
 
-    /**
-     * @author Griefed
-     */
     override fun setModpackDirectory(directory: String) {
         modpackSetting.text = directory
     }
 
-    /**
-     * @author Griefed
-     */
     override fun setPropertiesInclusionTicked(ticked: Boolean) {
         includePropertiesSetting.isSelected = ticked
     }
 
-    /**
-     * @author Griefed
-     */
     override fun setScriptVariables(variables: HashMap<String, String>) {
         advSetScriptKVPairsSetting.loadData(variables)
     }
 
-    /**
-     * @author Griefed
-     */
     override fun setServerIconPath(path: String) {
         iconSetting.text = path
     }

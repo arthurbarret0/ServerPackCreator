@@ -25,9 +25,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.scheduling.annotation.EnableScheduling
-import java.sql.Connection
-import java.sql.DriverManager
-import java.sql.SQLException
 
 @SpringBootApplication
 @EnableScheduling

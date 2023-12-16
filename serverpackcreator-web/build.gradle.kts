@@ -30,12 +30,10 @@ configurations {
 dependencies {
     api(project(":serverpackcreator-api"))
     api("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
-    api("org.apache.activemq:artemis-jms-server:2.28.0")
     api("com.fasterxml.jackson.module:jackson-module-kotlin:2.14.2")
     api("org.springframework.boot:spring-boot-starter-web:3.1.0")
     api("org.springframework.boot:spring-boot-starter-log4j2:3.0.4")
     api("org.springframework.boot:spring-boot-starter-data-jpa:3.0.4")
-    api("org.springframework.boot:spring-boot-starter-artemis:3.0.4")
     api("org.postgresql:postgresql:42.6.0")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.3")

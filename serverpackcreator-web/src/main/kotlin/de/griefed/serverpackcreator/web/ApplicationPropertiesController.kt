@@ -40,7 +40,7 @@ class ApplicationPropertiesController @Autowired constructor(
     private val apiProperties: ApiProperties,
     private val utilities: Utilities
 ) {
-
+    //TODO v2 with more configurations
     @get:GetMapping(produces = ["application/json"])
     val configuration: String
         get() = (((("{"

@@ -247,18 +247,12 @@ class AdvancedSettingsPanel(
         }
     }
 
-    /**
-     * @author Griefed
-     */
     private fun revertScriptKVPairs() {
         if (configEditor.lastConfig != null) {
             configEditor.setScriptVariables(configEditor.lastConfig!!.scriptSettings)
         }
     }
 
-    /**
-     * @author Griefed
-     */
     private fun resetScriptKVPairs() {
         configEditor.setScriptVariables(guiProps.defaultScriptKVSetting)
     }

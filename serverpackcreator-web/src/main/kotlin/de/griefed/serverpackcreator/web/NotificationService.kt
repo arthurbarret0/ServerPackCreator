@@ -19,15 +19,15 @@
  */
 package de.griefed.serverpackcreator.web
 
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 
 /**
  * NotificationResponse to be passed back to the requester.
  *
  * @author Griefed
  */
-@Component
-class NotificationResponse {
+@Service
+class NotificationService {
     /**
      * Construct a zipResponse for replying to a file-upload and display in a quasar notification.
      *

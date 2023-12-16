@@ -19,17 +19,11 @@
  */
 package de.griefed.serverpackcreator.web.serverpack
 
+import de.griefed.serverpackcreator.web.dto.ServerPack
 import org.apache.logging.log4j.kotlin.cachedLoggerOf
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.core.io.Resource
-import org.springframework.core.io.UrlResource
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import java.net.MalformedURLException
-import java.nio.file.Paths
-import java.sql.Timestamp
 import java.util.*
 
 /**
@@ -41,41 +35,8 @@ import java.util.*
 class ServerPackService @Autowired constructor(private val serverPackRepository: ServerPackRepository) {
     private val log = cachedLoggerOf(this.javaClass)
 
-    /**
-     * Download a server pack with the given database id.
-     *
-     * @param id The database id of the server pack to download.
-     * @return Returns a curseResponse entity with either the server pack as a downloadable file, or a
-     * curseResponse entity with a not found body.
-     * @author Griefed
-     */
-    fun downloadServerPackById(id: Int): ResponseEntity<Resource?> {
-        return if (serverPackRepository.findById(id).isPresent
-            && serverPackRepository.findById(id).get().status!!.matches("Available".toRegex())
-        ) {
-            val serverPackModel: ServerPackModel = serverPackRepository.findById(id).get()
-            val path = Paths.get(serverPackModel.path!!)
-            var resource: Resource? = null
-            val contentType = "application/zip"
-            try {
-                resource = UrlResource(path.toUri())
-            } catch (ex: MalformedURLException) {
-                log.error("Error generating download for server pack with ID$id.", ex)
-            }
-            updateDownloadCounter(id)
-            ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .header(
-                    HttpHeaders.CONTENT_DISPOSITION,
-                    "attachment; filename=\""
-                            + serverPackModel.fileDiskName!!.replace(".zip", "")
-                            + "_server_pack.zip"
-                            + "\""
-                )
-                .body(resource)
-        } else {
-            ResponseEntity.notFound().build()
-        }
+    fun getServerPack(id: Int): Optional<ServerPack> {
+        return serverPackRepository.findById(id)
     }
 
     /**
@@ -85,12 +46,9 @@ class ServerPackService @Autowired constructor(private val serverPackRepository:
      * @param id The database id of the server pack.
      * @author Griefed
      */
-    fun updateDownloadCounter(id: Int) {
-        if (serverPackRepository.findById(id).isPresent) {
-            val serverPackModelFromDB: ServerPackModel = serverPackRepository.findById(id).get()
-            serverPackModelFromDB.downloads = serverPackModelFromDB.downloads++
-            serverPackRepository.save(serverPackModelFromDB)
-        }
+    fun updateDownloadCounter(serverPack: ServerPack) {
+        serverPack.downloads = serverPack.downloads++
+        serverPackRepository.save(serverPack)
     }
 
     /**
@@ -101,17 +59,22 @@ class ServerPackService @Autowired constructor(private val serverPackRepository:
      * not found if the server pack could not be found.
      * @author Griefed
      */
-    fun voteForServerPack(voting: String): ResponseEntity<Any> {
-        val vote = voting.split(",").dropLastWhile { it.isEmpty() }.toTypedArray()
-        val id = vote[0].toInt()
-        return if (serverPackRepository.findById(id).isPresent
-            && serverPackRepository.findById(id).get().status.equals("Available")
-        ) {
-            if (vote[1].equals("up", ignoreCase = true)) {
-                updateConfirmedCounter(id, CounterChange.INCREMENT)
+    fun voteForServerPack(id: Int, vote: String): ResponseEntity<Any> {
+        val pack = serverPackRepository.findById(id)
+        return if (pack.isPresent) {
+            if (vote.equals("up", ignoreCase = true)) {
+                if (serverPackRepository.findById(id).isPresent) {
+                    val serverPackFromDB: ServerPack = serverPackRepository.findById(id).get()
+                    serverPackFromDB.confirmedWorking = serverPackFromDB.confirmedWorking--
+                    serverPackRepository.save(serverPackFromDB)
+                }
                 ResponseEntity.ok().build()
-            } else if (vote[1].equals("down", ignoreCase = true)) {
-                updateConfirmedCounter(id, CounterChange.DECREMENT)
+            } else if (vote.equals("down", ignoreCase = true)) {
+                if (serverPackRepository.findById(id).isPresent) {
+                    val serverPackFromDB: ServerPack = serverPackRepository.findById(id).get()
+                    serverPackFromDB.confirmedWorking = serverPackFromDB.confirmedWorking++
+                    serverPackRepository.save(serverPackFromDB)
+                }
                 ResponseEntity.ok().build()
             } else {
                 ResponseEntity.badRequest().build()
@@ -122,86 +85,36 @@ class ServerPackService @Autowired constructor(private val serverPackRepository:
     }
 
     /**
-     * Either increment or decrement the confirmed working value of a given server pack entry in the
-     * database, identified by the database id.
-     *
-     * @param id   The database id of the server pack.
-     * @param type [CounterChange.INCREMENT] to up the counter by one. [CounterChange.DECREMENT] to decrease the counter by one.
-     * @author Griefed
-     */
-    fun updateConfirmedCounter(
-        id: Int,
-        type: CounterChange
-    ) {
-        when (type) {
-            CounterChange.DECREMENT -> {
-                if (serverPackRepository.findById(id).isPresent) {
-                    val serverPackModelFromDB: ServerPackModel = serverPackRepository.findById(id).get()
-                    serverPackModelFromDB.confirmedWorking = serverPackModelFromDB.confirmedWorking--
-                    serverPackRepository.save(serverPackModelFromDB)
-                }
-            }
-
-            CounterChange.INCREMENT -> {
-                if (serverPackRepository.findById(id).isPresent) {
-                    val serverPackModelFromDB: ServerPackModel = serverPackRepository.findById(id).get()
-                    serverPackModelFromDB.confirmedWorking = serverPackModelFromDB.confirmedWorking++
-                    serverPackRepository.save(serverPackModelFromDB)
-                }
-            }
-        }
-    }
-
-    /**
      * Get a list of all available server packs.
      *
      * @return List ServerPackModel. Returns a list of all available server packs.
      * @author Griefed
      */
-    fun getServerPacks(): List<ServerPackModel> {
-        val serverPackModels: MutableList<ServerPackModel> = ArrayList(100)
-        for (model in serverPackRepository.findAll()) {
-            serverPackModels.add(model!!)
-        }
-        return serverPackModels
+    fun getServerPacks(): List<ServerPack> {
+        return serverPackRepository.findAll()
     }
 
     /**
-     * Store a server pack in the database.
+     * Save a server pack to the database.
      *
-     * @param serverPackModel Instance of [ServerPackModel] to store in the database.
      * @author Griefed
      */
-    fun insert(serverPackModel: ServerPackModel) {
-        serverPackRepository.save(serverPackModel)
-    }
-
-    /**
-     * Update a server pack database entry with the given database id.
-     *
-     * @param id              Integer. The database id of the server pack to initialize.
-     * @param serverPackModel Instance of [ServerPackModel] with which to initialize the entry
-     * in the database.
-     * @author Griefed
-     */
-    fun updateServerPackByID(
-        id: Int,
-        serverPackModel: ServerPackModel
+    fun saveServerPack(
+        serverPack: ServerPack
     ) {
-        if (serverPackRepository.findById(id).isPresent) {
-            val serverPackModelFromDB: ServerPackModel = serverPackRepository.findById(id).get()
-            log.debug("Updating database with: $serverPackModel")
-            serverPackModelFromDB.projectName = serverPackModel.projectName
-            serverPackModelFromDB.fileName = serverPackModel.fileName
-            serverPackModelFromDB.fileDiskName = serverPackModel.fileDiskName
-            serverPackModelFromDB.size = serverPackModel.size
-            serverPackModelFromDB.downloads = serverPackModel.downloads
-            serverPackModelFromDB.confirmedWorking = serverPackModel.confirmedWorking
-            serverPackModelFromDB.status = serverPackModel.status
-            serverPackModelFromDB.lastModified = Timestamp(Date().time)
-            serverPackModelFromDB.path = serverPackModel.path
-            serverPackRepository.save(serverPackModelFromDB)
+        val serverPackFromDB = serverPackRepository.findById(serverPack.id)
+        val pack: ServerPack = if (serverPackFromDB.isPresent) {
+            serverPackFromDB.get()
+        } else {
+            ServerPack()
         }
+        pack.modpack = serverPack.modpack
+        pack.size = serverPack.size
+        pack.downloads = serverPack.downloads
+        pack.confirmedWorking = serverPack.confirmedWorking
+        pack.data = serverPack.data
+        pack.dateCreated = serverPack.dateCreated
+        serverPackRepository.save(pack)
     }
 
     /**
@@ -210,13 +123,7 @@ class ServerPackService @Autowired constructor(private val serverPackRepository:
      * @param id The database id of the server pack to delete.
      * @author Griefed
      */
-    fun deleteServerPack(id: Int) {
-        serverPackRepository.deleteById(id)
+    fun deleteServerPack(serverPack: ServerPack) {
+        serverPackRepository.deleteById(serverPack.id)
     }
-}
-
-
-enum class CounterChange {
-    DECREMENT,
-    INCREMENT
 }

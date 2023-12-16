@@ -357,9 +357,6 @@ actual class ApiWrapper private constructor(
         }
     }
 
-    /**
-     * @author Griefed
-     */
     @Synchronized
     @Throws(IOException::class, ParserConfigurationException::class, SAXException::class)
     override fun setup(force: Boolean): ApiWrapper {
@@ -375,9 +372,6 @@ actual class ApiWrapper private constructor(
         return this
     }
 
-    /**
-     * @author Griefed
-     */
     override fun stageOne() {
         utilities.jarUtilities.copyFileFromJar(
             "README.md", true, this.javaClass, apiProperties.homeDirectory.absoluteFile.toString()
@@ -467,18 +461,12 @@ actual class ApiWrapper private constructor(
         log.info("Include this information when reporting an issue on GitHub.")
     }
 
-    /**
-     * @author Griefed
-     */
     @Throws(IOException::class, ParserConfigurationException::class, SAXException::class)
     override fun stageTwo() {
         versionMeta
         configurationHandler
     }
 
-    /**
-     * @author Griefed
-     */
     @Throws(IOException::class, ParserConfigurationException::class, SAXException::class)
     override fun stageThree() {
         apiPlugins
@@ -489,18 +477,12 @@ actual class ApiWrapper private constructor(
         serverPackHandler
     }
 
-    /**
-     * @author Griefed
-     */
     override fun checkServerFilesFile(fileToCheckFor: File) = utilities.jarUtilities.copyFileFromJar(
         "de/griefed/resources/server_files/${fileToCheckFor.name}",
         File(apiProperties.serverFilesDirectory, fileToCheckFor.name),
         this.javaClass
     )
 
-    /**
-     * @author Griefed
-     */
     override fun overwriteServerFilesFile(fileToOverwrite: File) {
         File(apiProperties.serverFilesDirectory, fileToOverwrite.name).deleteQuietly()
         checkServerFilesFile(fileToOverwrite)

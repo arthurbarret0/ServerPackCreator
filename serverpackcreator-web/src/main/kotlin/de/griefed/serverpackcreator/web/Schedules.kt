@@ -19,19 +19,16 @@
  */
 package de.griefed.serverpackcreator.web
 
-import de.griefed.serverpackcreator.api.utilities.common.deleteQuietly
 import de.griefed.serverpackcreator.api.versionmeta.VersionMeta
-import de.griefed.serverpackcreator.web.serverpack.ServerPackModel
+import de.griefed.serverpackcreator.web.modpack.ModpackService
+import de.griefed.serverpackcreator.web.modpack.ModpackStatus
 import de.griefed.serverpackcreator.web.serverpack.ServerPackService
 import org.apache.logging.log4j.kotlin.cachedLoggerOf
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.xml.sax.SAXException
-import java.io.File
 import java.io.IOException
-import java.sql.Timestamp
-import java.util.*
 import javax.xml.parsers.ParserConfigurationException
 
 /**
@@ -43,6 +40,7 @@ import javax.xml.parsers.ParserConfigurationException
 @Suppress("unused")
 class Schedules @Autowired constructor(
     private val serverPackService: ServerPackService,
+    private val modpackService: ModpackService,
     private val versionMeta: VersionMeta
 ) {
     private val log = cachedLoggerOf(this.javaClass)
@@ -58,54 +56,26 @@ class Schedules @Autowired constructor(
      */
     @Scheduled(cron = "\${de.griefed.serverpackcreator.spring.schedules.database.cleanup}")
     private fun cleanDatabase() {
-        if (serverPackService.getServerPacks().isNotEmpty()) {
-            log.info("Cleaning database...")
-            for (pack in serverPackService.getServerPacks()) {
-                if (Timestamp(Date().time).time - pack.lastModified!!.time
-                    >= 604800000
-                    && pack.downloads == 0
-                ) {
-                    deletePack(pack)
-                } else if (pack.status.equals("Available") && !File(pack.path!!).isFile) {
-                    deletePack(pack)
-                } else if (pack.status.equals("Generating")
-                    && Timestamp(Date().time).time - pack.lastModified!!.time
-                    >= 86400000
-                ) {
-                    deletePack(pack)
-                } else {
-                    log.info("No database entries to clean up.")
-                }
+        log.info("Cleaning database...")
+        for (modPack in modpackService.getModpacks()) {
+            if (modPack.status == ModpackStatus.ERROR) {
+                modpackService.deleteModpack(modPack)
+                log.info("Deleted Modpack: ${modPack.id}-${modPack.name}")
             }
-            log.info("Database cleanup completed.")
         }
-    }
-
-    private fun deletePack(pack: ServerPackModel) {
-        log.info("Deleting archive ${pack.path}")
-        File(pack.path!!).deleteQuietly()
-        log.info("Deleting folder ${pack.path!!.replace(" _server_pack -zip", "")}")
-        File(pack.path!!.replace("_server_pack-zip", "")).deleteQuietly()
-        log.info("Cleaned server pack ${pack.path} from database.")
-        serverPackService.deleteServerPack(pack.id)
+        for (serverPack in serverPackService.getServerPacks()) {
+            if (serverPack.data == null || serverPack.data!!.isEmpty()) {
+                serverPackService.deleteServerPack(serverPack)
+                log.info("Deleted Serverpack: ${serverPack.id}")
+            }
+        }
+        log.info("Database cleanup completed.")
     }
 
     @Scheduled(cron = "\${de.griefed.serverpackcreator.spring.schedules.files.cleanup}")
     private fun cleanFiles() {
-        if (serverPackService.getServerPacks().isNotEmpty()) {
-            log.info("Cleaning files...")
-            for (pack in serverPackService.getServerPacks()) {
-                if (File(pack.path!!).isFile
-                    && File(pack.path!!.replace("_server_pack-zip", "")).isDirectory
-                ) {
-                    log.info("Deleting folder ${pack.path!!.replace(" _server_pack -zip", "")}")
-                    File(pack.path!!.replace("_server_pack-zip", "")).deleteQuietly()
-                } else {
-                    log.info("No files to clean up.")
-                }
-            }
-            log.info("File cleanup completed.")
-        }
+        log.info("Cleaning files...")
+        log.info("File cleanup completed.")
     }
 
     @Scheduled(cron = "\${de.griefed.serverpackcreator.spring.schedules.versions.refresh}")

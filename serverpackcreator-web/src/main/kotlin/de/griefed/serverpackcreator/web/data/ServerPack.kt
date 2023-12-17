@@ -17,10 +17,12 @@
  *
  * The full license can be found at https:github.com/Griefed/ServerPackCreator/blob/main/LICENSE
  */
-package de.griefed.serverpackcreator.web.dto
+package de.griefed.serverpackcreator.web.data
 
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp
+import org.hibernate.annotations.Fetch
+import org.hibernate.annotations.FetchMode
 import java.sql.Timestamp
 
 @Entity
@@ -31,7 +33,8 @@ class ServerPack {
     @Column(updatable = false, nullable = false)
     var id = 0
 
-    @ManyToOne
+    @Fetch(FetchMode.SELECT)
+    @ManyToOne(fetch = FetchType.LAZY)
     var modpack: ModPack? = null
 
     @Column
@@ -43,9 +46,9 @@ class ServerPack {
     @Column
     var confirmedWorking: Int = 0
 
-    @Lob
-    @Column(length = Integer.MAX_VALUE)
-    var data: ByteArray? = null
+    @Fetch(FetchMode.SELECT)
+    @OneToOne(fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+    var fileData: FileData? = null
 
     @CreationTimestamp
     @Column
@@ -59,7 +62,7 @@ class ServerPack {
         size: Double,
         downloads: Int,
         confirmedWorking: Int,
-        data: ByteArray?,
+        data: FileData?,
         dateCreated: Timestamp?
     ) {
         this.id = id
@@ -67,7 +70,7 @@ class ServerPack {
         this.size = size
         this.downloads = downloads
         this.confirmedWorking = confirmedWorking
-        this.data = data
+        this.fileData = data
         this.dateCreated = dateCreated
     }
 
@@ -76,14 +79,14 @@ class ServerPack {
         size: Double,
         downloads: Int,
         confirmedWorking: Int,
-        data: ByteArray?,
+        data: FileData?,
         dateCreated: Timestamp?
     ) {
         this.modpack = modpack
         this.size = size
         this.downloads = downloads
         this.confirmedWorking = confirmedWorking
-        this.data = data
+        this.fileData = data
         this.dateCreated = dateCreated
     }
 
@@ -93,24 +96,19 @@ class ServerPack {
 
         other as ServerPack
 
-        if (modpack != other.modpack) return false
         if (size != other.size) return false
-        if (data != null) {
-            if (other.data == null) return false
-            if (!data.contentEquals(other.data)) return false
-        } else if (other.data != null) return false
+        if (fileData != other.fileData) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = modpack?.hashCode() ?: 0
-        result = 31 * result + size.hashCode()
-        result = 31 * result + (data?.contentHashCode() ?: 0)
+        var result = size.hashCode()
+        result = 31 * result + (fileData?.hashCode() ?: 0)
         return result
     }
 
     override fun toString(): String {
-        return "ServerPack(id=$id, modpack=$modpack, size=$size, downloads=$downloads, confirmedWorking=$confirmedWorking, data=${data?.contentToString()}, dateCreated=$dateCreated)"
+        return "ServerPack(id=$id, modpack=$modpack, size=$size, downloads=$downloads, confirmedWorking=$confirmedWorking, data=$fileData, dateCreated=$dateCreated)"
     }
 }

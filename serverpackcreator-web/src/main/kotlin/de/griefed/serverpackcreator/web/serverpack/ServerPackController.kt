@@ -19,7 +19,7 @@
  */
 package de.griefed.serverpackcreator.web.serverpack
 
-import de.griefed.serverpackcreator.web.dto.ServerPack
+import de.griefed.serverpackcreator.web.data.ServerPackView
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.Resource
@@ -50,7 +50,7 @@ class ServerPackController @Autowired constructor(private val serverPackService:
     @ResponseBody
     fun downloadServerPack(@PathVariable id: Int): ResponseEntity<Resource> {
         val serverPack = serverPackService.getServerPack(id)
-        return if (serverPack.isPresent && serverPack.get().data != null) {
+        return if (serverPack.isPresent && serverPack.get().fileData != null) {
             serverPackService.updateDownloadCounter(serverPack.get())
             ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("application/zip"))
@@ -58,7 +58,7 @@ class ServerPackController @Autowired constructor(private val serverPackService:
                     HttpHeaders.CONTENT_DISPOSITION,
                     "attachment; filename=\"${serverPack.get().modpack!!.name}_server_pack.zip\""
                 )
-                .body(ByteArrayResource(serverPack.get().data!!))
+                .body(ByteArrayResource(serverPack.get().fileData!!.data!!))
         } else {
             ResponseEntity.notFound().build()
         }
@@ -72,7 +72,7 @@ class ServerPackController @Autowired constructor(private val serverPackService:
      */
     @GetMapping("/all", produces = ["application/json"])
     @ResponseBody
-    fun getAllServerPacks(): ResponseEntity<List<ServerPack>> {
+    fun getAllServerPacks(): ResponseEntity<List<ServerPackView>> {
         return ResponseEntity.ok().header("Content-Type", "application/json").body(
             serverPackService.getServerPacks()
         )

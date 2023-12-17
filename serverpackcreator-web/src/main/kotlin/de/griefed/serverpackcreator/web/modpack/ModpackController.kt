@@ -1,7 +1,7 @@
 package de.griefed.serverpackcreator.web.modpack
 
 import de.griefed.serverpackcreator.web.NotificationService
-import de.griefed.serverpackcreator.web.dto.ModPack
+import de.griefed.serverpackcreator.web.data.ModPackView
 import de.griefed.serverpackcreator.web.task.TaskDetail
 import de.griefed.serverpackcreator.web.task.TaskExecutionServiceImpl
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -30,11 +30,11 @@ class ModpackController @Autowired constructor(
     @ResponseBody
     fun downloadModpack(@PathVariable id: Int): ResponseEntity<Resource> {
         val modpack = modpackService.getModpack(id)
-        return if (modpack.isPresent && modpack.get().data != null) {
+        return if (modpack.isPresent && modpack.get().fileData != null) {
             ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("application/zip"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${modpack.get().name}.zip\"")
-                .body(ByteArrayResource(modpack.get().data!!))
+                .body(ByteArrayResource(modpack.get().fileData!!.data!!))
         } else {
             ResponseEntity.notFound().build()
         }
@@ -110,7 +110,7 @@ class ModpackController @Autowired constructor(
 
     @GetMapping("/all", produces = ["application/json"])
     @ResponseBody
-    fun getAllModPacks(): ResponseEntity<List<ModPack>> {
+    fun getAllModPacks(): ResponseEntity<List<ModPackView>> {
         return ResponseEntity.ok().header("Content-Type", "application/json").body(
             modpackService.getModpacks()
         )

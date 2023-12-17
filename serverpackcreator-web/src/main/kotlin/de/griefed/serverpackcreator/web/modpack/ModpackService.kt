@@ -2,7 +2,9 @@ package de.griefed.serverpackcreator.web.modpack
 
 import de.griefed.serverpackcreator.api.ApiProperties
 import de.griefed.serverpackcreator.api.PackConfig
-import de.griefed.serverpackcreator.web.dto.ModPack
+import de.griefed.serverpackcreator.web.data.FileData
+import de.griefed.serverpackcreator.web.data.ModPack
+import de.griefed.serverpackcreator.web.data.ModPackView
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
@@ -42,7 +44,8 @@ class ModpackService @Autowired constructor(
         }
         modpack.status = ModpackStatus.QUEUED
         modpack.source = ModpackSource.ZIP
-        modpack.data = file.bytes
+        modpack.fileData = FileData()
+        modpack.fileData!!.data = file.bytes
         return modpackRepository.save(modpack)
     }
 
@@ -65,7 +68,7 @@ class ModpackService @Autowired constructor(
         dbModPack.size = modpack.size
         dbModPack.status = modpack.status
         dbModPack.source = modpack.source
-        dbModPack.data = modpack.data
+        dbModPack.fileData = modpack.fileData
         return modpackRepository.save(dbModPack)
     }
 
@@ -73,8 +76,8 @@ class ModpackService @Autowired constructor(
         return modpackRepository.findById(id)
     }
 
-    fun getModpacks(): List<ModPack> {
-        return modpackRepository.findAll()
+    fun getModpacks(): List<ModPackView> {
+        return modpackRepository.findAllProjectedBy()
     }
 
     fun getPackConfigForModpack(modpack: ModPack): PackConfig {
@@ -89,8 +92,8 @@ class ModpackService @Autowired constructor(
         return packConfig
     }
 
-    fun deleteModpack(modpack: ModPack) {
-        modpackRepository.deleteById(modpack.id)
+    fun deleteModpack(id: Int) {
+        modpackRepository.deleteById(id)
     }
 
     /**
@@ -104,11 +107,10 @@ class ModpackService @Autowired constructor(
      */
     @Throws(IOException::class, IllegalArgumentException::class)
     fun exportModpackToDisk(modpack: ModPack): File {
-        if (modpack.data == null) {
+        if (modpack.fileData == null) {
             throw IllegalArgumentException("Modpack ${modpack.id} does not have data to export.")
         }
         var zipPath: Path = File(apiProperties.modpacksDirectory, modpack.file).toPath()
-
         // Does an archive with the same name already exist?
         if (zipPath.toFile().isFile) {
             var incrementation = 0
@@ -118,7 +120,10 @@ class ModpackService @Autowired constructor(
             }
             zipPath = Paths.get("${substring}_$incrementation.zip")
         }
-        Files.write(zipPath, modpack.data!!)
+        /*FileOutputStream(zipPath.toFile()).use {
+            IOUtils.copy(modpack.data!!.binaryStream, it)
+        }*/
+        Files.write(zipPath, modpack.fileData!!.data!!)
         return zipPath.toFile()
     }
 }

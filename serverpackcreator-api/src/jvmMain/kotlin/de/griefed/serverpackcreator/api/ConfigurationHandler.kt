@@ -138,7 +138,7 @@ actual class ConfigurationHandler(
             log.error("Modpack directory not specified. Please specify an existing directory. Specified: ${packConfig.modpackDir}")
         }
 
-        if (!checkModloader(packConfig.modloader, configCheck).modloaderChecksPassed) {
+        if (checkModloader(packConfig.modloader, configCheck).modloaderChecksPassed) {
             log.debug("modLoader settings check passed.")
         } else {
             log.error("There's something wrong with your modloader or modloader version setting.")
@@ -568,7 +568,10 @@ actual class ConfigurationHandler(
             doNotInclude = apiProperties.directoriesToExclude.toList()[i]
             dirsInModpack.removeIf { it.source == doNotInclude }
         }
-        log.info("Modpack directory checked. Suggested directories for copyDirs-setting are: $dirsInModpack")
+        log.info("Modpack directory checked. Suggested directories for copyDirs-setting are:")
+        for (inclusion in dirsInModpack) {
+            log.info("    ${inclusion.source}")
+        }
         return dirsInModpack
     }
 

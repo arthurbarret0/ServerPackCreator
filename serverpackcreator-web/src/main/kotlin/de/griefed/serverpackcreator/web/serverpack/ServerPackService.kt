@@ -19,7 +19,8 @@
  */
 package de.griefed.serverpackcreator.web.serverpack
 
-import de.griefed.serverpackcreator.web.dto.ServerPack
+import de.griefed.serverpackcreator.web.data.ServerPack
+import de.griefed.serverpackcreator.web.data.ServerPackView
 import org.apache.logging.log4j.kotlin.cachedLoggerOf
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
@@ -90,8 +91,8 @@ class ServerPackService @Autowired constructor(private val serverPackRepository:
      * @return List ServerPackModel. Returns a list of all available server packs.
      * @author Griefed
      */
-    fun getServerPacks(): List<ServerPack> {
-        return serverPackRepository.findAll()
+    fun getServerPacks(): List<ServerPackView> {
+        return serverPackRepository.findAllProjectedBy()
     }
 
     /**
@@ -112,7 +113,7 @@ class ServerPackService @Autowired constructor(private val serverPackRepository:
         pack.size = serverPack.size
         pack.downloads = serverPack.downloads
         pack.confirmedWorking = serverPack.confirmedWorking
-        pack.data = serverPack.data
+        pack.fileData = serverPack.fileData
         pack.dateCreated = serverPack.dateCreated
         serverPackRepository.save(pack)
     }

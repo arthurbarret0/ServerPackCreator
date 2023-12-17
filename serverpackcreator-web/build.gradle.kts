@@ -35,6 +35,7 @@ dependencies {
     api("org.springframework.boot:spring-boot-starter-log4j2:3.0.4")
     api("org.springframework.boot:spring-boot-starter-data-jpa:3.0.4")
     api("org.postgresql:postgresql:42.6.0")
+    api("org.javassist:javassist:3.29.2-GA")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.3")
     testRuntimeOnly("com.h2database:h2:2.1.214")

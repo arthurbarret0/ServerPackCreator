@@ -17,12 +17,9 @@
  *
  * The full license can be found at https:github.com/Griefed/ServerPackCreator/blob/main/LICENSE
  */
-package de.griefed.serverpackcreator.web
+package de.griefed.serverpackcreator.web.scheduling
 
 import de.griefed.serverpackcreator.api.versionmeta.VersionMeta
-import de.griefed.serverpackcreator.web.modpack.ModpackService
-import de.griefed.serverpackcreator.web.modpack.ModpackStatus
-import de.griefed.serverpackcreator.web.serverpack.ServerPackService
 import org.apache.logging.log4j.kotlin.cachedLoggerOf
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
@@ -37,46 +34,8 @@ import javax.xml.parsers.ParserConfigurationException
  * @author Griefed
  */
 @Service
-@Suppress("unused")
-class Schedules @Autowired constructor(
-    private val serverPackService: ServerPackService,
-    private val modpackService: ModpackService,
-    private val versionMeta: VersionMeta
-) {
+class VersionRefreshSchedule @Autowired constructor(private val versionMeta: VersionMeta) {
     private val log = cachedLoggerOf(this.javaClass)
-
-    /**
-     * Check the database every
-     * `de.griefed.serverpackcreator.spring.schedules.database.cleanup ` for validity. <br></br>
-     * Deletes entries from the database which are older than 1 week and have 0 downloads. <br></br>
-     * Deletes entries whose status is `Available` but no server pack ZIP-archive can be found.
-     * <br></br>
-     *
-     * @author Griefed
-     */
-    @Scheduled(cron = "\${de.griefed.serverpackcreator.spring.schedules.database.cleanup}")
-    private fun cleanDatabase() {
-        log.info("Cleaning database...")
-        for (modPack in modpackService.getModpacks()) {
-            if (modPack.status == ModpackStatus.ERROR) {
-                modpackService.deleteModpack(modPack)
-                log.info("Deleted Modpack: ${modPack.id}-${modPack.name}")
-            }
-        }
-        for (serverPack in serverPackService.getServerPacks()) {
-            if (serverPack.data == null || serverPack.data!!.isEmpty()) {
-                serverPackService.deleteServerPack(serverPack)
-                log.info("Deleted Serverpack: ${serverPack.id}")
-            }
-        }
-        log.info("Database cleanup completed.")
-    }
-
-    @Scheduled(cron = "\${de.griefed.serverpackcreator.spring.schedules.files.cleanup}")
-    private fun cleanFiles() {
-        log.info("Cleaning files...")
-        log.info("File cleanup completed.")
-    }
 
     @Scheduled(cron = "\${de.griefed.serverpackcreator.spring.schedules.versions.refresh}")
     private fun refreshVersionLister() {

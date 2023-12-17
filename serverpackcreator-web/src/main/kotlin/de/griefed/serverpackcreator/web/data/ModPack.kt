@@ -1,8 +1,10 @@
-package de.griefed.serverpackcreator.web.dto
+package de.griefed.serverpackcreator.web.data
 
 import de.griefed.serverpackcreator.web.modpack.ModpackSource
 import de.griefed.serverpackcreator.web.modpack.ModpackStatus
 import jakarta.persistence.*
+import org.hibernate.annotations.Fetch
+import org.hibernate.annotations.FetchMode
 
 @Entity
 class ModPack {
@@ -50,15 +52,15 @@ class ModPack {
     @Column
     var source: ModpackSource = ModpackSource.ZIP
 
-    @OneToMany
-    var serverPack: List<ServerPack> = listOf()
+    @Fetch(FetchMode.SELECT)
+    @OneToMany(fetch = FetchType.LAZY)
+    var serverPack: MutableList<ServerPack> = mutableListOf()
 
-    @Lob
-    @Column(length = Integer.MAX_VALUE)
-    var data: ByteArray? = null
+    @Fetch(FetchMode.SELECT)
+    @OneToOne(fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+    var fileData: FileData? = null
 
     constructor()
-
     constructor(
         id: Int,
         projectID: String,
@@ -67,13 +69,14 @@ class ModPack {
         modloader: String,
         modloaderVersion: String,
         clientMods: String,
-        whiteList: String,
+        whiteListMods: String,
         name: String,
-        fileName: String,
+        file: String,
         size: Double,
         status: ModpackStatus,
         source: ModpackSource,
-        data: ByteArray?
+        serverPack: MutableList<ServerPack>,
+        data: FileData?
     ) {
         this.id = id
         this.projectID = projectID
@@ -82,13 +85,14 @@ class ModPack {
         this.modloader = modloader
         this.modloaderVersion = modloaderVersion
         this.clientMods = clientMods
-        this.whiteListMods = whiteList
+        this.whiteListMods = whiteListMods
         this.name = name
-        this.file = fileName
+        this.file = file
         this.size = size
         this.status = status
         this.source = source
-        this.data = data
+        this.serverPack = serverPack
+        this.fileData = data
     }
 
     constructor(
@@ -98,13 +102,14 @@ class ModPack {
         modloader: String,
         modloaderVersion: String,
         clientMods: String,
-        whiteList: String,
+        whiteListMods: String,
         name: String,
-        fileName: String,
+        file: String,
         size: Double,
         status: ModpackStatus,
         source: ModpackSource,
-        data: ByteArray?
+        serverPack: MutableList<ServerPack>,
+        data: FileData?
     ) {
         this.projectID = projectID
         this.versionID = versionID
@@ -112,17 +117,14 @@ class ModPack {
         this.modloader = modloader
         this.modloaderVersion = modloaderVersion
         this.clientMods = clientMods
-        this.whiteListMods = whiteList
+        this.whiteListMods = whiteListMods
         this.name = name
-        this.file = fileName
+        this.file = file
         this.size = size
         this.status = status
         this.source = source
-        this.data = data
-    }
-
-    override fun toString(): String {
-        return "Modpack(id=$id, projectID='$projectID', versionID='$versionID', name='$name', fileName='$file', size=$size, status='$status', source=$source, data=${data?.contentToString()})"
+        this.serverPack = serverPack
+        this.fileData = data
     }
 
     override fun equals(other: Any?): Boolean {
@@ -138,14 +140,9 @@ class ModPack {
         if (modloaderVersion != other.modloaderVersion) return false
         if (clientMods != other.clientMods) return false
         if (whiteListMods != other.whiteListMods) return false
-        if (name != other.name) return false
-        if (file != other.file) return false
         if (size != other.size) return false
         if (source != other.source) return false
-        if (data != null) {
-            if (other.data == null) return false
-            if (!data.contentEquals(other.data)) return false
-        } else if (other.data != null) return false
+        if (fileData != other.fileData) return false
 
         return true
     }
@@ -158,11 +155,9 @@ class ModPack {
         result = 31 * result + modloaderVersion.hashCode()
         result = 31 * result + clientMods.hashCode()
         result = 31 * result + whiteListMods.hashCode()
-        result = 31 * result + name.hashCode()
-        result = 31 * result + file.hashCode()
         result = 31 * result + size.hashCode()
         result = 31 * result + source.hashCode()
-        result = 31 * result + (data?.contentHashCode() ?: 0)
+        result = 31 * result + (fileData?.hashCode() ?: 0)
         return result
     }
 }

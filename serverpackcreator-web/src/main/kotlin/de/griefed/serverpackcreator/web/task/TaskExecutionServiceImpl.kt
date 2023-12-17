@@ -4,8 +4,9 @@ import de.griefed.serverpackcreator.api.ConfigurationHandler
 import de.griefed.serverpackcreator.api.ServerPackHandler
 import de.griefed.serverpackcreator.api.utilities.common.deleteQuietly
 import de.griefed.serverpackcreator.api.utilities.common.size
-import de.griefed.serverpackcreator.web.dto.ModPack
-import de.griefed.serverpackcreator.web.dto.ServerPack
+import de.griefed.serverpackcreator.web.data.FileData
+import de.griefed.serverpackcreator.web.data.ModPack
+import de.griefed.serverpackcreator.web.data.ServerPack
 import de.griefed.serverpackcreator.web.modpack.ModpackService
 import de.griefed.serverpackcreator.web.modpack.ModpackSource
 import de.griefed.serverpackcreator.web.modpack.ModpackStatus
@@ -62,7 +63,7 @@ class TaskExecutionServiceImpl @Autowired constructor(
      */
     override fun submitTaskInQueue(taskDetail: TaskDetail) {
         blockingQueue.add(taskDetail)
-        logger.info("Task for Customer : ${taskDetail.modpack.id} submitted in Queue")
+        logger.info("Task for Server Pack : ${taskDetail.modpack.id} submitted in Queue")
     }
 
     private fun processTask(taskDetail: TaskDetail) {
@@ -121,9 +122,11 @@ class TaskExecutionServiceImpl @Autowired constructor(
             val serverPack = ServerPack()
             serverPack.modpack = modpack
             serverPack.size = serverPackZip.size().div(1048576.0)
-            serverPack.data = serverPackZip.readBytes()
+            serverPack.fileData = FileData()
+            serverPack.fileData!!.data = serverPackZip.readBytes()
             modpack.serverPack.addLast(serverPack)
             modpack.status = ModpackStatus.GENERATED
+            logger.info("Storing server pack : ${serverPack.id}")
             serverPackService.saveServerPack(serverPack)
             File(destination).deleteQuietly()
         } else {

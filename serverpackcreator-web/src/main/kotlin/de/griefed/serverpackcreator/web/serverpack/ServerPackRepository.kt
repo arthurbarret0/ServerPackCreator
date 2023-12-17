@@ -19,10 +19,13 @@
  */
 package de.griefed.serverpackcreator.web.serverpack
 
-import de.griefed.serverpackcreator.web.dto.ServerPack
+import de.griefed.serverpackcreator.web.data.ServerPack
+import de.griefed.serverpackcreator.web.data.ServerPackView
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
 @Suppress("unused")
-interface ServerPackRepository : JpaRepository<ServerPack, Int>
+interface ServerPackRepository : JpaRepository<ServerPack, Int> {
+    fun findAllProjectedBy(): MutableList<ServerPackView>
+}

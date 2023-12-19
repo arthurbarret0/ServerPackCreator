@@ -19,10 +19,12 @@
  */
 package de.griefed.serverpackcreator.web.data
 
-import jakarta.persistence.*
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.Id
 import org.hibernate.annotations.CreationTimestamp
-import org.hibernate.annotations.Fetch
-import org.hibernate.annotations.FetchMode
+import java.math.BigInteger
 import java.sql.Timestamp
 
 @Entity
@@ -33,10 +35,6 @@ class ServerPack {
     @Column(updatable = false, nullable = false)
     var id = 0
 
-    @Fetch(FetchMode.SELECT)
-    @ManyToOne(fetch = FetchType.LAZY)
-    var modpack: ModPack? = null
-
     @Column
     var size: Double = 0.0
 
@@ -46,49 +44,15 @@ class ServerPack {
     @Column
     var confirmedWorking: Int = 0
 
-    @Fetch(FetchMode.SELECT)
-    @OneToOne(fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
-    var fileData: FileData? = null
-
     @CreationTimestamp
     @Column
     var dateCreated: Timestamp? = null
 
-    constructor()
+    @Column
+    var fileID: Int? = null
 
-    constructor(
-        id: Int,
-        modpack: ModPack?,
-        size: Double,
-        downloads: Int,
-        confirmedWorking: Int,
-        data: FileData?,
-        dateCreated: Timestamp?
-    ) {
-        this.id = id
-        this.modpack = modpack
-        this.size = size
-        this.downloads = downloads
-        this.confirmedWorking = confirmedWorking
-        this.fileData = data
-        this.dateCreated = dateCreated
-    }
-
-    constructor(
-        modpack: ModPack?,
-        size: Double,
-        downloads: Int,
-        confirmedWorking: Int,
-        data: FileData?,
-        dateCreated: Timestamp?
-    ) {
-        this.modpack = modpack
-        this.size = size
-        this.downloads = downloads
-        this.confirmedWorking = confirmedWorking
-        this.fileData = data
-        this.dateCreated = dateCreated
-    }
+    @Column
+    var fileHash: BigInteger? = null
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -97,18 +61,20 @@ class ServerPack {
         other as ServerPack
 
         if (size != other.size) return false
-        if (fileData != other.fileData) return false
+        if (fileID != other.fileID) return false
+        if (fileHash != other.fileHash) return false
 
         return true
     }
 
     override fun hashCode(): Int {
         var result = size.hashCode()
-        result = 31 * result + (fileData?.hashCode() ?: 0)
+        result = 31 * result + (fileID?.hashCode() ?: 0)
+        result = 31 * result + (fileHash?.hashCode() ?: 0)
         return result
     }
 
     override fun toString(): String {
-        return "ServerPack(id=$id, modpack=$modpack, size=$size, downloads=$downloads, confirmedWorking=$confirmedWorking, data=$fileData, dateCreated=$dateCreated)"
+        return "ServerPack(id=$id, size=$size, downloads=$downloads, confirmedWorking=$confirmedWorking, dateCreated=$dateCreated, fileID=$fileID, fileHash=$fileHash)"
     }
 }

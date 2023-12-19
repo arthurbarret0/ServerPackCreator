@@ -4,7 +4,7 @@ import de.griefed.serverpackcreator.api.ConfigurationHandler
 import de.griefed.serverpackcreator.api.ServerPackHandler
 import de.griefed.serverpackcreator.api.utilities.common.deleteQuietly
 import de.griefed.serverpackcreator.api.utilities.common.size
-import de.griefed.serverpackcreator.web.data.FileData
+import de.griefed.serverpackcreator.web.data.ModPackFile
 import de.griefed.serverpackcreator.web.data.ModPack
 import de.griefed.serverpackcreator.web.data.ServerPack
 import de.griefed.serverpackcreator.web.modpack.ModpackService
@@ -122,8 +122,8 @@ class TaskExecutionServiceImpl @Autowired constructor(
             val serverPack = ServerPack()
             serverPack.modpack = modpack
             serverPack.size = serverPackZip.size().div(1048576.0)
-            serverPack.fileData = FileData()
-            serverPack.fileData!!.data = serverPackZip.readBytes()
+            serverPack.modPackFile = ModPackFile()
+            serverPack.modPackFile!!.data = serverPackZip.readBytes()
             modpack.serverPack.addLast(serverPack)
             modpack.status = ModpackStatus.GENERATED
             logger.info("Storing server pack : ${serverPack.id}")

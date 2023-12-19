@@ -113,7 +113,7 @@ class ServerPackService @Autowired constructor(private val serverPackRepository:
         pack.size = serverPack.size
         pack.downloads = serverPack.downloads
         pack.confirmedWorking = serverPack.confirmedWorking
-        pack.fileData = serverPack.fileData
+        pack.modPackFile = serverPack.modPackFile
         pack.dateCreated = serverPack.dateCreated
         serverPackRepository.save(pack)
     }

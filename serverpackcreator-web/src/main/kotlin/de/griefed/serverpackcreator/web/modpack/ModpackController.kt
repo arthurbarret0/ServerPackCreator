@@ -30,11 +30,11 @@ class ModpackController @Autowired constructor(
     @ResponseBody
     fun downloadModpack(@PathVariable id: Int): ResponseEntity<Resource> {
         val modpack = modpackService.getModpack(id)
-        return if (modpack.isPresent && modpack.get().fileData != null) {
+        return if (modpack.isPresent && modpack.get().modPackFile != null) {
             ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("application/zip"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${modpack.get().name}.zip\"")
-                .body(ByteArrayResource(modpack.get().fileData!!.data!!))
+                .body(ByteArrayResource(modpack.get().modPackFile!!.data!!))
         } else {
             ResponseEntity.notFound().build()
         }

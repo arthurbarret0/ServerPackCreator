@@ -50,7 +50,7 @@ class ServerPackController @Autowired constructor(private val serverPackService:
     @ResponseBody
     fun downloadServerPack(@PathVariable id: Int): ResponseEntity<Resource> {
         val serverPack = serverPackService.getServerPack(id)
-        return if (serverPack.isPresent && serverPack.get().fileData != null) {
+        return if (serverPack.isPresent && serverPack.get().modPackFile != null) {
             serverPackService.updateDownloadCounter(serverPack.get())
             ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("application/zip"))
@@ -58,7 +58,7 @@ class ServerPackController @Autowired constructor(private val serverPackService:
                     HttpHeaders.CONTENT_DISPOSITION,
                     "attachment; filename=\"${serverPack.get().modpack!!.name}_server_pack.zip\""
                 )
-                .body(ByteArrayResource(serverPack.get().fileData!!.data!!))
+                .body(ByteArrayResource(serverPack.get().modPackFile!!.data!!))
         } else {
             ResponseEntity.notFound().build()
         }

@@ -2,24 +2,27 @@ package de.griefed.serverpackcreator.web.modpack
 
 import de.griefed.serverpackcreator.api.ApiProperties
 import de.griefed.serverpackcreator.api.PackConfig
-import de.griefed.serverpackcreator.web.data.FileData
 import de.griefed.serverpackcreator.web.data.ModPack
 import de.griefed.serverpackcreator.web.data.ModPackView
+import de.griefed.serverpackcreator.web.storage.DatabaseStorageService
+import de.griefed.serverpackcreator.web.storage.StorageRepository
+import de.griefed.serverpackcreator.web.storage.StorageSystem
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
 
 @Service
 class ModpackService @Autowired constructor(
     private val modpackRepository: ModpackRepository,
-    private val apiProperties: ApiProperties
+    private val apiProperties: ApiProperties,
+    private val storageRepository: StorageRepository
 ) {
+    private val modPackStorageSystem: StorageSystem = StorageSystem(apiProperties.modpacksDirectory.toPath(), DatabaseStorageService(storageRepository), )
 
     fun saveZipModpack(
         file: MultipartFile,
@@ -30,9 +33,6 @@ class ModpackService @Autowired constructor(
         whiteListMods: String
     ): ModPack {
         val modpack = ModPack()
-        modpack.name = file.originalFilename?.replace(".zip", "", ignoreCase = true) ?: file.name
-        modpack.file = file.originalFilename ?: file.name
-        modpack.size = file.size.div(1048576.0)
         modpack.minecraftVersion = minecraftVersion
         modpack.modloader = modloader
         modpack.modloaderVersion = modloaderVersion
@@ -43,33 +43,17 @@ class ModpackService @Autowired constructor(
             apiProperties.whitelistedMods().joinToString(",")
         }
         modpack.status = ModpackStatus.QUEUED
+        modpack.name = file.originalFilename ?: file.name
+        modpack.size = file.size.toDouble()
         modpack.source = ModpackSource.ZIP
-        modpack.fileData = FileData()
-        modpack.fileData!!.data = file.bytes
+        val storePair = modPackStorageSystem.store(file, System.currentTimeMillis().toInt()).get()
+        modpack.fileID = storePair.first.toInt()
+        modpack.fileHash = storePair.second.toBigInteger()
         return modpackRepository.save(modpack)
     }
 
     fun saveModpack(modpack: ModPack): ModPack {
-        val dbEntry = modpackRepository.findById(modpack.id)
-        val dbModPack: ModPack = if (dbEntry.isPresent) {
-            dbEntry.get()
-        } else {
-            ModPack()
-        }
-        dbModPack.name = modpack.name
-        dbModPack.projectID = modpack.projectID
-        dbModPack.versionID = modpack.versionID
-        dbModPack.minecraftVersion = modpack.minecraftVersion
-        dbModPack.modloader = modpack.modloader
-        dbModPack.modloaderVersion = modpack.modloaderVersion
-        dbModPack.clientMods = modpack.clientMods
-        dbModPack.whiteListMods = modpack.whiteListMods
-        dbModPack.file = modpack.file
-        dbModPack.size = modpack.size
-        dbModPack.status = modpack.status
-        dbModPack.source = modpack.source
-        dbModPack.fileData = modpack.fileData
-        return modpackRepository.save(dbModPack)
+        return modpackRepository.save(modpack)
     }
 
     fun getModpack(id: Int): Optional<ModPack> {
@@ -82,7 +66,7 @@ class ModpackService @Autowired constructor(
 
     fun getPackConfigForModpack(modpack: ModPack): PackConfig {
         val packConfig = PackConfig()
-        packConfig.modpackDir = modpack.file
+        packConfig.modpackDir = File(apiProperties.modpacksDirectory, "${modpack.fileID}.zip").absolutePath
         packConfig.setClientMods(modpack.clientMods.split(",").toMutableList())
         packConfig.setModsWhitelist(modpack.whiteListMods.split(",").toMutableList())
         packConfig.minecraftVersion = modpack.minecraftVersion
@@ -107,23 +91,23 @@ class ModpackService @Autowired constructor(
      */
     @Throws(IOException::class, IllegalArgumentException::class)
     fun exportModpackToDisk(modpack: ModPack): File {
-        if (modpack.fileData == null) {
+        if (modPackStorageSystem.load(modpack.fileID.toString()).isEmpty) {
             throw IllegalArgumentException("Modpack ${modpack.id} does not have data to export.")
         }
-        var zipPath: Path = File(apiProperties.modpacksDirectory, modpack.file).toPath()
+        var zip = File(apiProperties.modpacksDirectory, "${modpack.fileID}.zip").absoluteFile
         // Does an archive with the same name already exist?
-        if (zipPath.toFile().isFile) {
+        if (zip.isFile) {
             var incrementation = 0
-            val substring = zipPath.toString().substring(0, zipPath.toString().length - 4)
+            val substring = zip.toString().substring(0, zip.toString().length - 4)
             while (File("${substring}_$incrementation.zip").isFile) {
                 incrementation++
             }
-            zipPath = Paths.get("${substring}_$incrementation.zip")
+            zip = Paths.get("${substring}_$incrementation.zip").toFile()
         }
         /*FileOutputStream(zipPath.toFile()).use {
             IOUtils.copy(modpack.data!!.binaryStream, it)
         }*/
-        Files.write(zipPath, modpack.fileData!!.data!!)
-        return zipPath.toFile()
+        Files.write(zip, modpack.modPackFile!!.data!!)
+        return zip
     }
 }

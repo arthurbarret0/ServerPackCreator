@@ -25,7 +25,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-@Suppress("unused")
 interface ServerPackRepository : JpaRepository<ServerPack, Int> {
     fun findAllProjectedBy(): MutableList<ServerPackView>
 }

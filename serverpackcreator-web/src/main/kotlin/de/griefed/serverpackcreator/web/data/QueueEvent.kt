@@ -19,16 +19,35 @@
  */
 package de.griefed.serverpackcreator.web.data
 
-import org.springframework.data.web.ProjectedPayload
+import de.griefed.serverpackcreator.web.modpack.ModpackStatus
+import jakarta.persistence.*
+import org.hibernate.annotations.CreationTimestamp
 import java.sql.Timestamp
 
-@ProjectedPayload
-interface ServerPackView {
-    var id: Int
-    var size: Double
-    var downloads: Int
-    var confirmedWorking: Int
-    var dateCreated: Timestamp
-    var sha256: String
-    var runConfiguration: RunConfiguration
+@Entity
+class QueueEvent {
+
+    @Id
+    @GeneratedValue
+    @Column(updatable = false, nullable = false)
+    var id: Int = 0
+
+    @Column
+    var modPackId: Int = 0
+
+    @Column
+    var serverPackId: Int? = null
+
+    @Column
+    var status: ModpackStatus? = null
+
+    @Column
+    var message: String = ""
+
+    @CreationTimestamp
+    @Column
+    var timestamp: Timestamp? = null
+
+    @ManyToMany
+    var errors: MutableList<ErrorEntry> = mutableListOf()
 }

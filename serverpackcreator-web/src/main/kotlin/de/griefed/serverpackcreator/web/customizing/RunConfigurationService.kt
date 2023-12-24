@@ -22,6 +22,7 @@ package de.griefed.serverpackcreator.web.customizing
 import de.griefed.serverpackcreator.api.ApiProperties
 import de.griefed.serverpackcreator.web.data.ClientMod
 import de.griefed.serverpackcreator.web.data.RunConfiguration
+import de.griefed.serverpackcreator.web.data.StartArgument
 import de.griefed.serverpackcreator.web.data.WhitelistedMod
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -32,8 +33,13 @@ class RunConfigurationService @Autowired constructor(
     private val runConfigurationRepository: RunConfigurationRepository,
     private val apiProperties: ApiProperties,
     private val clientModRepository: ClientModRepository,
-    private val whitelistedModRepository: WhitelistedModRepository
+    private val whitelistedModRepository: WhitelistedModRepository,
+    private val startArgumentRepository: StartArgumentRepository
 ) {
+    private val spaces : Regex = "\\s+".toRegex()
+    private val commaSpace: String = ", "
+    private val comma: String = ","
+    private val space: String = " "
 
     fun createRunConfig(
         minecraftVersion: String,
@@ -47,12 +53,24 @@ class RunConfigurationService @Autowired constructor(
         config.minecraftVersion = minecraftVersion
         config.modloader = modloader
         config.modloaderVersion = modloaderVersion
-        config.startArgs = startArgs
-        if (config.startArgs.isBlank()) {
-            config.startArgs = apiProperties.aikarsFlags
+
+        if (startArgs.isNotBlank()) {
+            for (argument in startArgs.replace(spaces, space).split(space)) {
+                config.startArgs.add(StartArgument(argument))
+            }
+        } else {
+            config.startArgs.addAll(apiProperties.aikarsFlags.replace(spaces, space).split(space).map { StartArgument(it) })
         }
+        for (i in 0 until config.startArgs.size) {
+            if (startArgumentRepository.findByArgument(config.startArgs[i].argument).isPresent) {
+                config.startArgs[i] = startArgumentRepository.findByArgument(config.startArgs[i].argument).get()
+            } else {
+                config.startArgs[i] = startArgumentRepository.save(config.startArgs[i])
+            }
+        }
+
         if (clientMods.isNotBlank()) {
-            for (mod in clientMods.replace(", ", ",").split(",")) {
+            for (mod in clientMods.replace(commaSpace, comma).split(comma)) {
                 config.clientMods.add(ClientMod(mod))
             }
         } else {
@@ -65,8 +83,9 @@ class RunConfigurationService @Autowired constructor(
                 config.clientMods[i] = clientModRepository.save(config.clientMods[i])
             }
         }
+
         if (whitelistedMods.isNotBlank()) {
-            for (mod in whitelistedMods.replace(", ", ",").split(",")) {
+            for (mod in whitelistedMods.replace(commaSpace, comma).split(comma)) {
                 config.whitelistedMods.add(WhitelistedMod(mod))
             }
         } else {
@@ -80,12 +99,13 @@ class RunConfigurationService @Autowired constructor(
                 config.whitelistedMods[i] = whitelistedModRepository.save(config.whitelistedMods[i])
             }
         }
+
         return save(config)
     }
 
     fun save(runConfiguration: RunConfiguration): RunConfiguration {
         val fromRepo =
-            runConfigurationRepository.findByMinecraftVersionAndModloaderAndModloaderVersionAndStartArgsAndClientModsInAndWhitelistedModsIn(
+            runConfigurationRepository.findByMinecraftVersionAndModloaderAndModloaderVersionAndStartArgsInAndClientModsInAndWhitelistedModsIn(
                 minecraftVersion = runConfiguration.minecraftVersion,
                 modloader = runConfiguration.modloader,
                 modloaderVersion = runConfiguration.modloaderVersion,
@@ -104,7 +124,7 @@ class RunConfigurationService @Autowired constructor(
         minecraftVersion: String,
         modloader: String,
         modloaderVersion: String,
-        startArgs: String,
+        startArgs: MutableList<StartArgument>,
         clientMods: MutableList<ClientMod>,
         whitelistedMods: MutableList<WhitelistedMod>
     ): RunConfiguration {
@@ -126,11 +146,11 @@ class RunConfigurationService @Autowired constructor(
         minecraftVersion: String,
         modloader: String,
         modloaderVersion: String,
-        startArgs: String,
+        startArgs: MutableList<StartArgument>,
         clientMods: MutableList<ClientMod>,
         whitelistedMods: MutableList<WhitelistedMod>
     ): Optional<RunConfiguration> {
-        return runConfigurationRepository.findByMinecraftVersionAndModloaderAndModloaderVersionAndStartArgsAndClientModsInAndWhitelistedModsIn(
+        return runConfigurationRepository.findByMinecraftVersionAndModloaderAndModloaderVersionAndStartArgsInAndClientModsInAndWhitelistedModsIn(
             minecraftVersion = minecraftVersion,
             modloader = modloader,
             modloaderVersion = modloaderVersion,

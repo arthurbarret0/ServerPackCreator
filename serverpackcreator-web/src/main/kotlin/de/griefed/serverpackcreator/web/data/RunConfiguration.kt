@@ -38,8 +38,8 @@ class RunConfiguration() {
     @Column
     var modloaderVersion: String = ""
 
-    @Column
-    var startArgs: String = ""
+    @ManyToMany(fetch = FetchType.EAGER)
+    var startArgs: MutableList<StartArgument> = mutableListOf()
 
     @ManyToMany(fetch = FetchType.EAGER)
     var clientMods: MutableList<ClientMod> = mutableListOf()
@@ -51,7 +51,7 @@ class RunConfiguration() {
         minecraftVersion: String,
         modloader: String,
         modloaderVersion: String,
-        startArgs: String,
+        startArgs: MutableList<StartArgument>,
         clientMods: MutableList<ClientMod>,
         whitelistedMods: MutableList<WhitelistedMod>
     ) : this() {
@@ -63,5 +63,33 @@ class RunConfiguration() {
         this.whitelistedMods = whitelistedMods
     }
 
-    //TODO equals, hash, toString
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as RunConfiguration
+
+        if (minecraftVersion != other.minecraftVersion) return false
+        if (modloader != other.modloader) return false
+        if (modloaderVersion != other.modloaderVersion) return false
+        if (startArgs != other.startArgs) return false
+        if (clientMods != other.clientMods) return false
+        if (whitelistedMods != other.whitelistedMods) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = minecraftVersion.hashCode()
+        result = 31 * result + modloader.hashCode()
+        result = 31 * result + modloaderVersion.hashCode()
+        result = 31 * result + startArgs.hashCode()
+        result = 31 * result + clientMods.hashCode()
+        result = 31 * result + whitelistedMods.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return "RunConfiguration(id=$id, minecraftVersion='$minecraftVersion', modloader='$modloader', modloaderVersion='$modloaderVersion', startArgs=$startArgs, clientMods=$clientMods, whitelistedMods=$whitelistedMods)"
+    }
 }

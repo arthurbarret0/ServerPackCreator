@@ -17,18 +17,10 @@
  *
  * The full license can be found at https:github.com/Griefed/ServerPackCreator/blob/main/LICENSE
  */
-package de.griefed.serverpackcreator.web.data
+package de.griefed.serverpackcreator.web.task
 
-import org.springframework.data.web.ProjectedPayload
-import java.sql.Timestamp
+import org.springframework.stereotype.Service
 
-@ProjectedPayload
-interface ServerPackView {
-    var id: Int
-    var size: Double
-    var downloads: Int
-    var confirmedWorking: Int
-    var dateCreated: Timestamp
-    var sha256: String
-    var runConfiguration: RunConfiguration
+@Service
+class EventService {
 }

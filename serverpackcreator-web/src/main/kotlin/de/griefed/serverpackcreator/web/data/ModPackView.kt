@@ -34,6 +34,6 @@ interface ModPackView {
     var size: Double
     var status: ModpackStatus
     var source: ModpackSource
-    var fileHash: String
+    var sha256: String
     var serverPacks: MutableList<ServerPack>
 }

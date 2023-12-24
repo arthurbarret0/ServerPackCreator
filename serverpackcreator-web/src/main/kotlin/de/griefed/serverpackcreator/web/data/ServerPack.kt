@@ -32,7 +32,7 @@ class ServerPack() {
     var id: Int = 0
 
     @Column
-    var size: Double = 0.0
+    var size: Int = 0
 
     @Column
     var downloads: Int = 0
@@ -48,7 +48,7 @@ class ServerPack() {
     var fileID: Long? = null
 
     @Column
-    var fileHash: String? = null
+    var sha256: String? = null
 
     @ManyToOne(fetch = FetchType.EAGER)
     var runConfiguration: RunConfiguration? = null
@@ -60,15 +60,38 @@ class ServerPack() {
         dateCreated: Timestamp?,
         runConfiguration: RunConfiguration?,
         fileID: Long?,
-        fileHash: String?
+        sha256: String?
     ) : this() {
-        this.size = size
+        this.size = size.toInt()
         this.downloads = downloads
         this.confirmedWorking = confirmedWorking
         this.dateCreated = dateCreated
         this.runConfiguration = runConfiguration
         this.fileID = fileID
-        this.fileHash = fileHash
+        this.sha256 = sha256
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ServerPack
+
+        if (fileID != other.fileID) return false
+        if (sha256 != other.sha256) return false
+        if (runConfiguration != other.runConfiguration) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = fileID?.hashCode() ?: 0
+        result = 31 * result + (sha256?.hashCode() ?: 0)
+        result = 31 * result + (runConfiguration?.hashCode() ?: 0)
+        return result
+    }
+
+    override fun toString(): String {
+        return "ServerPack(id=$id, size=$size, downloads=$downloads, confirmedWorking=$confirmedWorking, dateCreated=$dateCreated, fileID=$fileID, sha256=$sha256, runConfiguration=$runConfiguration)"
+    }
 }

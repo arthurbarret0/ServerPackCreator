@@ -49,12 +49,16 @@ class ModpackService @Autowired constructor(
         val modpack = ModPack()
         modpack.status = ModpackStatus.QUEUED
         modpack.name = file.originalFilename ?: file.name
-        modpack.size = file.size.toDouble()
+        modpack.size = file.size.toDouble().div(1048576.0).toInt()
         modpack.source = ModpackSource.ZIP
-        val storePair = storage.store(file).get()
+        val storePair = storage.storeOnFilesystem(file).get()
         modpack.fileID = storePair.first
-        modpack.fileHash = storePair.second
+        modpack.sha256 = storePair.second
         return modpackRepository.save(modpack)
+    }
+
+    fun storeInDatabase(file: File, id: Long, sha256: String) {
+        storage.storeInDatabase(file, id, sha256)
     }
 
     fun saveModpack(modpack: ModPack): ModPack {
@@ -80,6 +84,7 @@ class ModpackService @Autowired constructor(
         packConfig.minecraftVersion = runConfiguration.minecraftVersion
         packConfig.modloader = runConfiguration.modloader
         packConfig.modloaderVersion = runConfiguration.modloaderVersion
+        packConfig.javaArgs = runConfiguration.startArgs.joinToString(" ")
         packConfig.isZipCreationDesired = true
         return packConfig
     }

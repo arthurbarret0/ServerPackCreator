@@ -47,7 +47,7 @@ class ModPack {
     var name: String = ""//TODO set from archive, or mainfest in ZIP, or Modrinth Project name & version name
 
     @Column
-    var size: Double = 0.0
+    var size: Int = 0
 
     @Column
     var status: ModpackStatus = ModpackStatus.QUEUED
@@ -59,10 +59,35 @@ class ModPack {
     var fileID: Long? = null
 
     @Column
-    var fileHash: String? = null
+    var sha256: String? = null
 
     @OneToMany(fetch = FetchType.EAGER)
     var serverPacks: MutableList<ServerPack> = mutableListOf()
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
 
-    //TODO equals, hash, toString
+        other as ModPack
+
+        if (projectID != other.projectID) return false
+        if (versionID != other.versionID) return false
+        if (name != other.name) return false
+        if (source != other.source) return false
+        if (sha256 != other.sha256) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = projectID.hashCode()
+        result = 31 * result + versionID.hashCode()
+        result = 31 * result + name.hashCode()
+        result = 31 * result + source.hashCode()
+        result = 31 * result + (sha256?.hashCode() ?: 0)
+        return result
+    }
+
+    override fun toString(): String {
+        return "ModPack(id=$id, projectID='$projectID', versionID='$versionID', dateCreated=$dateCreated, name='$name', size=$size, status=$status, source=$source, fileID=$fileID, sha256=$sha256, serverPacks=$serverPacks)"
+    }
 }

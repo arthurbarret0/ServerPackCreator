@@ -51,8 +51,8 @@ class FileSystemStorageService(private val rootLocation: Path, private val messa
             }
             file.transferTo(destinationFile)
             logger.debug("Stored file to $destinationFile.")
-            val hash = String(Hex.encode(messageDigestInstance.digest(destinationFile.toFile().readBytes())))
-            return Optional.of(Triple(id, hash, destinationFile))
+            val sha256 = String(Hex.encode(messageDigestInstance.digest(destinationFile.toFile().readBytes())))
+            return Optional.of(Triple(id, sha256, destinationFile))
         } catch (e: IOException) {
             return Optional.empty()
         }

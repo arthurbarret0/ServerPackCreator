@@ -23,10 +23,40 @@ import de.griefed.serverpackcreator.api.PackConfig
 import de.griefed.serverpackcreator.web.data.ModPack
 import de.griefed.serverpackcreator.web.data.RunConfiguration
 import de.griefed.serverpackcreator.web.data.ServerPack
+import java.io.File
 
 class TaskDetail(val modpack: ModPack) {
 
     var serverPack: ServerPack? = null
     var packConfig: PackConfig? = null
     var runConfiguration: RunConfiguration? = null
+
+    var serverPackFile: File? = null
+    var modPackFile: File? = null
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as TaskDetail
+
+        if (modpack != other.modpack) return false
+        if (serverPack != other.serverPack) return false
+        if (packConfig != other.packConfig) return false
+        if (runConfiguration != other.runConfiguration) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = modpack.hashCode()
+        result = 31 * result + (serverPack?.hashCode() ?: 0)
+        result = 31 * result + (packConfig?.hashCode() ?: 0)
+        result = 31 * result + (runConfiguration?.hashCode() ?: 0)
+        return result
+    }
+
+    override fun toString(): String {
+        return "TaskDetail(modpack=$modpack, serverPack=$serverPack, packConfig=$packConfig, runConfiguration=$runConfiguration)"
+    }
 }

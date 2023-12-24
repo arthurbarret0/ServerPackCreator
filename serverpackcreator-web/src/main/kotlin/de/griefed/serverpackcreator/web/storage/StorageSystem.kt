@@ -49,6 +49,15 @@ class StorageSystem(
         return Optional.of(Pair(triple.get().first, triple.get().second))
     }
 
+    fun storeOnFilesystem(file: MultipartFile): Optional<Pair<Long, String>> {
+        val triple = fileSystemStorageService.store(file)
+        return Optional.of(Pair(triple.get().first, triple.get().second))
+    }
+
+    fun storeInDatabase(file: File, id: Long, sha256: String) {
+        databaseStorage.store(file, id, sha256)
+    }
+
     fun load(id: Long): Optional<File> {
         val fileSys = fileSystemStorageService.load(id)
         if (fileSys.isPresent) {

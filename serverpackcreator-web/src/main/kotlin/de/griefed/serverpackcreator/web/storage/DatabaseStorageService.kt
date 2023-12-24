@@ -19,11 +19,7 @@
  */
 package de.griefed.serverpackcreator.web.storage
 
-import de.griefed.serverpackcreator.api.utilities.common.size
 import de.griefed.serverpackcreator.web.data.StorageData
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import org.apache.logging.log4j.kotlin.KotlinLogger
 import org.apache.logging.log4j.kotlin.cachedLoggerOf
 import org.hibernate.engine.jdbc.BlobProxy
@@ -35,14 +31,11 @@ import java.util.*
 class DatabaseStorageService(private val storageRepository: StorageRepository, private val rootLocation: Path) {
     private val logger: KotlinLogger = cachedLoggerOf(this.javaClass)
 
-    @OptIn(DelicateCoroutinesApi::class)
-    fun store(file: File, id: Long, hash: String) {
-        GlobalScope.launch {
-            logger.debug("    ID: $id")
-            logger.debug("SHA256: $hash")
-            val data = StorageData(id, hash, BlobProxy.generateProxy(file.inputStream(), file.size().toLong()))
-            storageRepository.save(data)
-        }
+    fun store(file: File, id: Long, sha256: String) {
+        logger.debug("    ID: $id")
+        logger.debug("SHA256: $sha256")
+        val data = StorageData(id, sha256, BlobProxy.generateProxy(file.inputStream(), file.length()))
+        storageRepository.save(data)
     }
 
     fun load(id: Long): Optional<File> {

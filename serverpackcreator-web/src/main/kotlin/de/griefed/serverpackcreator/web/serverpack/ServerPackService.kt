@@ -26,7 +26,6 @@ import de.griefed.serverpackcreator.web.storage.DatabaseStorageService
 import de.griefed.serverpackcreator.web.storage.StorageRepository
 import de.griefed.serverpackcreator.web.storage.StorageSystem
 import org.apache.logging.log4j.kotlin.cachedLoggerOf
-import org.bouncycastle.util.encoders.Hex
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
@@ -138,13 +137,8 @@ class ServerPackService @Autowired constructor(
         serverPackRepository.save(serverPack)
     }
 
-    fun storeGeneration(file: File, serverPack: ServerPack) {
-        val id = System.currentTimeMillis()
-        val hash = String(Hex.encode(messageDigestInstance.digest(file.readBytes())))
-        databaseStorage.store(file, id, hash)
-        serverPack.fileID = id
-        serverPack.fileHash = hash
-        saveServerPack(serverPack)
+    fun storeGeneration(file: File, id: Long, sha256: String) {
+        databaseStorage.store(file, id, sha256)
     }
 
     /**

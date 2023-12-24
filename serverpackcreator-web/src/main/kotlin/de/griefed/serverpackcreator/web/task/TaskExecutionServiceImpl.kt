@@ -32,9 +32,11 @@ import de.griefed.serverpackcreator.web.serverpack.ServerPackService
 import de.griefed.serverpackcreator.web.storage.StorageException
 import org.apache.logging.log4j.kotlin.KotlinLogger
 import org.apache.logging.log4j.kotlin.cachedLoggerOf
+import org.bouncycastle.util.encoders.Hex
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.io.File
+import java.security.MessageDigest
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingDeque
 
@@ -44,7 +46,8 @@ class TaskExecutionServiceImpl @Autowired constructor(
     private val modpackService: ModpackService,
     private val serverPackService: ServerPackService,
     private val configurationHandler: ConfigurationHandler,
-    private val serverPackHandler: ServerPackHandler
+    private val serverPackHandler: ServerPackHandler,
+    private val messageDigestInstance: MessageDigest
 ) :
     TaskExecutionService {
     private val logger: KotlinLogger = cachedLoggerOf(this.javaClass)
@@ -65,6 +68,8 @@ class TaskExecutionServiceImpl @Autowired constructor(
                         logger.info("Processing Next Task from Queue")
                         val taskDetail = blockingQueue.take()
                         processTask(taskDetail)
+                    } else {
+                        Thread.sleep(1000)
                     }
                 } catch (e: InterruptedException) {
                     logger.error("There was an error while processing ", e)
@@ -97,8 +102,27 @@ class TaskExecutionServiceImpl @Autowired constructor(
                 }
             }
 
+            ModpackStatus.GENERATED, ModpackStatus.ERROR -> syncToDatabase(taskDetail)
             else -> logger.error("${taskDetail.modpack.status} does not merit unique processing.")
         }
+    }
+
+    private fun syncToDatabase(taskDetail: TaskDetail) {
+        if (taskDetail.modPackFile != null) {
+            logger.info("Syncing ModPack ${taskDetail.modpack.id} - ${taskDetail.modpack.name} to database.")
+            modpackService.storeInDatabase(
+                taskDetail.modPackFile!!,
+                taskDetail.modpack.fileID!!,
+                taskDetail.modpack.sha256!!
+            )
+            logger.info("Synced ModPack ${taskDetail.modpack.id} - ${taskDetail.modpack.name} to database.")
+        }
+        if (taskDetail.serverPack != null && taskDetail.serverPackFile != null) {
+            logger.info("Syncing ServerPack ${taskDetail.serverPack!!.id} - ${taskDetail.modpack.name} to database.")
+            serverPackService.storeGeneration(taskDetail.serverPackFile!!, taskDetail.serverPack!!.fileID!!, taskDetail.serverPack!!.sha256!!)
+            logger.info("Synced ServerPack : ${taskDetail.serverPack!!.id} - ${taskDetail.modpack.name} to database.")
+        }
+        Runtime.getRuntime().gc()
     }
 
     private fun checkModpack(taskDetail: TaskDetail) {
@@ -110,15 +134,16 @@ class TaskExecutionServiceImpl @Autowired constructor(
         taskDetail.modpack.status = ModpackStatus.CHECKING
         modpackService.saveModpack(taskDetail.modpack)
         val packConfig = modpackService.getPackConfigForModpack(taskDetail.modpack, taskDetail.runConfiguration!!)
+        taskDetail.modPackFile = File(packConfig.modpackDir)
         val check = configurationHandler.checkConfiguration(packConfig)
         if (check.allChecksPassed) {
             taskDetail.modpack.status = ModpackStatus.CHECKED
             taskDetail.packConfig = packConfig
-            submitTaskInQueue(taskDetail)
         } else {
             taskDetail.modpack.status = ModpackStatus.ERROR
         }
         modpackService.saveModpack(taskDetail.modpack)
+        submitTaskInQueue(taskDetail)
     }
 
     private fun generateFromModrinth(modpack: ModPack) {
@@ -132,23 +157,31 @@ class TaskExecutionServiceImpl @Autowired constructor(
         taskDetail.modpack.status = ModpackStatus.GENERATING
         modpackService.saveModpack(taskDetail.modpack)
         if (taskDetail.packConfig == null && taskDetail.runConfiguration != null) {
-            taskDetail.packConfig = modpackService.getPackConfigForModpack(taskDetail.modpack, taskDetail.runConfiguration!!)
+            taskDetail.packConfig =
+                modpackService.getPackConfigForModpack(taskDetail.modpack, taskDetail.runConfiguration!!)
         }
         if (serverPackHandler.run(taskDetail.packConfig!!)) {
             val destination = serverPackHandler.getServerPackDestination(taskDetail.packConfig!!)
             val serverPackZip = File("${destination}_server_pack.zip").absoluteFile
             val serverPack = ServerPack()
-            serverPack.size = serverPackZip.size()
+            serverPack.size = serverPackZip.size().div(1048576.0).toInt()
             serverPack.runConfiguration = taskDetail.runConfiguration
+            serverPack.fileID = System.currentTimeMillis()
+            serverPack.sha256 = String(Hex.encode(messageDigestInstance.digest(serverPackZip.readBytes())))
+            serverPackService.saveServerPack(serverPack)
             taskDetail.modpack.serverPacks.addLast(serverPack)
             taskDetail.modpack.status = ModpackStatus.GENERATED
-            logger.info("Storing server pack : ${serverPack.id}")
-            serverPackService.storeGeneration(serverPackZip, serverPack)
+            taskDetail.serverPack = serverPack
+            taskDetail.serverPackFile = serverPackZip
+            //logger.info("Storing server pack : ${serverPack.id}")
+            //serverPackService.storeGeneration(serverPackZip, serverPack)
             File(destination).deleteQuietly()
+            File(taskDetail.packConfig!!.modpackDir).deleteQuietly()
         } else {
             taskDetail.modpack.status = ModpackStatus.ERROR
         }
         modpackService.saveModpack(taskDetail.modpack)
+        submitTaskInQueue(taskDetail)
         logger.info("Server Pack generated.")
     }
 

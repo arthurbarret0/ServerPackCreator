@@ -19,16 +19,40 @@
  */
 package de.griefed.serverpackcreator.web.data
 
-import org.springframework.data.web.ProjectedPayload
-import java.sql.Timestamp
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.Id
 
-@ProjectedPayload
-interface ServerPackView {
-    var id: Int
-    var size: Double
-    var downloads: Int
-    var confirmedWorking: Int
-    var dateCreated: Timestamp
-    var sha256: String
-    var runConfiguration: RunConfiguration
+@Entity
+class ErrorEntry {
+
+    @Id
+    @GeneratedValue
+    @Column(updatable = false, nullable = false)
+    var id: Int = 0
+
+    @Column
+    var error: String
+
+    constructor(error: String) {
+        this.error = error
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ErrorEntry
+
+        return error == other.error
+    }
+
+    override fun hashCode(): Int {
+        return error.hashCode()
+    }
+
+    override fun toString(): String {
+        return "ErrorEntry(id=$id, error='$error')"
+    }
 }

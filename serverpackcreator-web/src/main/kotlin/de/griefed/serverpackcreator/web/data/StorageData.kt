@@ -35,16 +35,16 @@ class StorageData {
     var id: Long
 
     @Column
-    var hash: String
+    var sha256: String
 
     @Lob
     @JdbcTypeCode(Types.BLOB)
     @Column(length = Integer.MAX_VALUE)
     var data: Blob
 
-    constructor(id: Long, hash: String, data: Blob) {
+    constructor(id: Long, sha256: String, data: Blob) {
         this.id = id
-        this.hash = hash
+        this.sha256 = sha256
         this.data = data
     }
 
@@ -54,19 +54,19 @@ class StorageData {
 
         other as StorageData
 
-        if (hash != other.hash) return false
+        if (sha256 != other.sha256) return false
         if (data != other.data) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = hash.hashCode()
+        var result = sha256.hashCode()
         result = 31 * result + data.hashCode()
         return result
     }
 
     override fun toString(): String {
-        return "StorageData(id=$id, hash=$hash, data=$data)"
+        return "StorageData(id=$id, sha256=$sha256, data=$data)"
     }
 }

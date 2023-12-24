@@ -39,27 +39,12 @@ class ModPack {
     @Column
     var versionID: String = ""
 
-    @Column
-    var minecraftVersion: String = ""
-
-    @Column
-    var modloader: String = ""
-
-    @Column
-    var modloaderVersion: String = ""
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    var clientMods: MutableList<ClientMod> = mutableListOf()
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    var whitelistedMods: MutableList<WhitelistedMod> = mutableListOf()
-
     @CreationTimestamp
     @Column
     var dateCreated: Timestamp? = null
 
     @Column
-    var name: String = ""
+    var name: String = ""//TODO set from archive, or mainfest in ZIP, or Modrinth Project name & version name
 
     @Column
     var size: Double = 0.0
@@ -76,6 +61,8 @@ class ModPack {
     @Column
     var fileHash: String? = null
 
-    @OneToMany
+    @OneToMany(fetch = FetchType.EAGER)
     var serverPacks: MutableList<ServerPack> = mutableListOf()
+
+    //TODO equals, hash, toString
 }

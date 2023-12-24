@@ -29,16 +29,11 @@ interface ModPackView {
     var id: Int
     var projectID: String
     var versionID: String
-    var minecraftVersion: String
-    var modloader: String
-    var modloaderVersion: String
-    var clientMods: MutableList<ClientMod>
-    var whiteListMods: MutableList<WhitelistedMod>
     var dateCreated: Timestamp
     var name: String
     var size: Double
     var status: ModpackStatus
     var source: ModpackSource
     var fileHash: String
-    var serverPack: MutableList<ServerPack>
+    var serverPacks: MutableList<ServerPack>
 }

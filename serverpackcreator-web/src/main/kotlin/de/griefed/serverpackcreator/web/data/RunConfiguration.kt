@@ -20,11 +20,9 @@
 package de.griefed.serverpackcreator.web.data
 
 import jakarta.persistence.*
-import org.hibernate.annotations.CreationTimestamp
-import java.sql.Timestamp
 
 @Entity
-class ServerPack() {
+class RunConfiguration() {
 
     @Id
     @GeneratedValue
@@ -32,43 +30,38 @@ class ServerPack() {
     var id: Int = 0
 
     @Column
-    var size: Double = 0.0
+    var minecraftVersion: String = ""
 
     @Column
-    var downloads: Int = 0
+    var modloader: String = ""
 
     @Column
-    var confirmedWorking: Int = 0
-
-    @CreationTimestamp
-    @Column
-    var dateCreated: Timestamp? = null
+    var modloaderVersion: String = ""
 
     @Column
-    var fileID: Long? = null
+    var startArgs: String = ""
 
-    @Column
-    var fileHash: String? = null
+    @ManyToMany(fetch = FetchType.EAGER)
+    var clientMods: MutableList<ClientMod> = mutableListOf()
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    var runConfiguration: RunConfiguration? = null
+    @ManyToMany(fetch = FetchType.EAGER)
+    var whitelistedMods: MutableList<WhitelistedMod> = mutableListOf()
 
     constructor(
-        size: Double,
-        downloads: Int,
-        confirmedWorking: Int,
-        dateCreated: Timestamp?,
-        runConfiguration: RunConfiguration?,
-        fileID: Long?,
-        fileHash: String?
+        minecraftVersion: String,
+        modloader: String,
+        modloaderVersion: String,
+        startArgs: String,
+        clientMods: MutableList<ClientMod>,
+        whitelistedMods: MutableList<WhitelistedMod>
     ) : this() {
-        this.size = size
-        this.downloads = downloads
-        this.confirmedWorking = confirmedWorking
-        this.dateCreated = dateCreated
-        this.runConfiguration = runConfiguration
-        this.fileID = fileID
-        this.fileHash = fileHash
+        this.minecraftVersion = minecraftVersion
+        this.modloader = modloader
+        this.modloaderVersion = modloaderVersion
+        this.startArgs = startArgs
+        this.clientMods = clientMods
+        this.whitelistedMods = whitelistedMods
     }
 
+    //TODO equals, hash, toString
 }

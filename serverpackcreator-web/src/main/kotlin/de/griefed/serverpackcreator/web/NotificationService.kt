@@ -47,7 +47,7 @@ class NotificationService {
         colour: String,
         file: String,
         success: Boolean
-    ): String {
+    ): String {//TODO refactor to POJO with constructor
         val stringBuilder = StringBuilder()
         for (message in messages) {
             stringBuilder.append(message)

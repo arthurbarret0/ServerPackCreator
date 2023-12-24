@@ -22,12 +22,9 @@ package de.griefed.serverpackcreator.web.modpack
 import de.griefed.serverpackcreator.api.ApiProperties
 import de.griefed.serverpackcreator.api.ConfigurationHandler
 import de.griefed.serverpackcreator.api.PackConfig
-import de.griefed.serverpackcreator.web.customizing.ClientModRepository
-import de.griefed.serverpackcreator.web.customizing.WhitelistedModRepository
-import de.griefed.serverpackcreator.web.data.ClientMod
 import de.griefed.serverpackcreator.web.data.ModPack
 import de.griefed.serverpackcreator.web.data.ModPackView
-import de.griefed.serverpackcreator.web.data.WhitelistedMod
+import de.griefed.serverpackcreator.web.data.RunConfiguration
 import de.griefed.serverpackcreator.web.storage.StorageRepository
 import de.griefed.serverpackcreator.web.storage.StorageSystem
 import org.springframework.beans.factory.annotation.Autowired
@@ -41,55 +38,15 @@ import java.util.*
 @Service
 class ModpackService @Autowired constructor(
     private val modpackRepository: ModpackRepository,
-    private val apiProperties: ApiProperties,
-    private val clientModRepository: ClientModRepository,
-    private val whitelistedModRepository: WhitelistedModRepository,
     private val configurationHandler: ConfigurationHandler,
+    apiProperties: ApiProperties,
     storageRepository: StorageRepository,
 ) {
     private val rootLocation: Path = apiProperties.modpacksDirectory.toPath()
     private val storage: StorageSystem = StorageSystem(rootLocation, storageRepository)
 
-    fun saveZipModpack(
-        file: MultipartFile,
-        minecraftVersion: String,
-        modloader: String,
-        modloaderVersion: String,
-        clientMods: String,
-        whiteListMods: String
-    ): ModPack {
+    fun saveZipModpack(file: MultipartFile): ModPack {
         val modpack = ModPack()
-        modpack.minecraftVersion = minecraftVersion
-        modpack.modloader = modloader
-        modpack.modloaderVersion = modloaderVersion
-        if (clientMods.isNotBlank()) {
-            for (mod in clientMods.replace(", ",",").split(",")) {
-                modpack.clientMods.add(ClientMod(mod))
-            }
-        } else {
-            modpack.clientMods.addAll(apiProperties.clientSideMods().map { ClientMod(it) })
-        }
-        for (i in 0 until modpack.clientMods.size) {
-            if (clientModRepository.findByMod(modpack.clientMods[i].mod).isPresent) {
-                modpack.clientMods[i] = clientModRepository.findByMod(modpack.clientMods[i].mod).get()
-            } else {
-                modpack.clientMods[i] = clientModRepository.save(modpack.clientMods[i])
-            }
-        }
-        if (whiteListMods.isNotBlank()) {
-            for (mod in whiteListMods.replace(", ",",").split(",")) {
-                modpack.whitelistedMods.add(WhitelistedMod(mod))
-            }
-        } else {
-            modpack.whitelistedMods.addAll(apiProperties.whitelistedMods().map { WhitelistedMod(it) })
-        }
-        for (i in 0 until modpack.whitelistedMods.size) {
-            if (whitelistedModRepository.findByMod(modpack.whitelistedMods[i].mod).isPresent) {
-                modpack.whitelistedMods[i] = whitelistedModRepository.findByMod(modpack.whitelistedMods[i].mod).get()
-            } else {
-                modpack.whitelistedMods[i] = whitelistedModRepository.save(modpack.whitelistedMods[i])
-            }
-        }
         modpack.status = ModpackStatus.QUEUED
         modpack.name = file.originalFilename ?: file.name
         modpack.size = file.size.toDouble()
@@ -112,17 +69,17 @@ class ModpackService @Autowired constructor(
         return modpackRepository.findAllProjectedBy()
     }
 
-    fun getPackConfigForModpack(modpack: ModPack): PackConfig {
+    fun getPackConfigForModpack(modpack: ModPack, runConfiguration: RunConfiguration): PackConfig {
         val packConfig = PackConfig()
         packConfig.modpackDir = rootLocation.resolve("${modpack.fileID}.zip").normalize().toFile().absolutePath
-        packConfig.setClientMods(modpack.clientMods.map { it.mod }.toMutableList())
-        packConfig.setModsWhitelist(modpack.whitelistedMods.map { it.mod }.toMutableList())
+        packConfig.setClientMods(runConfiguration.clientMods.map { it.mod }.toMutableList())
+        packConfig.setModsWhitelist(runConfiguration.whitelistedMods.map { it.mod }.toMutableList())
         if (modpack.status == ModpackStatus.GENERATING) {
             packConfig.inclusions.addAll(configurationHandler.suggestInclusions(packConfig.modpackDir))
         }
-        packConfig.minecraftVersion = modpack.minecraftVersion
-        packConfig.modloader = modpack.modloader
-        packConfig.modloaderVersion = modpack.modloaderVersion
+        packConfig.minecraftVersion = runConfiguration.minecraftVersion
+        packConfig.modloader = runConfiguration.modloader
+        packConfig.modloaderVersion = runConfiguration.modloaderVersion
         packConfig.isZipCreationDesired = true
         return packConfig
     }

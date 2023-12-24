@@ -30,7 +30,7 @@ import java.util.*
 class StorageSystem(
     private val databaseStorage: DatabaseStorageService,
     private val fileSystemStorageService: FileSystemStorageService
-) : StorageService {
+) {
     private val logger: KotlinLogger = cachedLoggerOf(this.javaClass)
 
     constructor(rootLocation: Path, databaseStorage: DatabaseStorageService, messageDigest: MessageDigest) : this(
@@ -43,13 +43,13 @@ class StorageSystem(
         FileSystemStorageService(rootLocation)
     )
 
-    override fun store(file: MultipartFile): Optional<Pair<Long, String>> {
+    fun store(file: MultipartFile): Optional<Pair<Long, String>> {
         val triple = fileSystemStorageService.store(file)
         databaseStorage.store(triple.get().third.toFile(), triple.get().first, triple.get().second)
         return Optional.of(Pair(triple.get().first, triple.get().second))
     }
 
-    override fun load(id: Long): Optional<File> {
+    fun load(id: Long): Optional<File> {
         val fileSys = fileSystemStorageService.load(id)
         if (fileSys.isPresent) {
             return fileSys
@@ -62,12 +62,12 @@ class StorageSystem(
         return Optional.empty()
     }
 
-    override fun delete(id: Long) {
+    fun delete(id: Long) {
         fileSystemStorageService.delete(id)
         databaseStorage.delete(id)
     }
 
-    override fun deleteAll() {
+    fun deleteAll() {
         fileSystemStorageService.deleteAll()
         databaseStorage.deleteAll()
     }

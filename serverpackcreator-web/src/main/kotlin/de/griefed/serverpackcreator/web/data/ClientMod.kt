@@ -29,7 +29,7 @@ class ClientMod {
 
     @Id
     @GeneratedValue
-    @Column
+    @Column(updatable = false, nullable = false)
     var id: Int = 0
 
     @Column

@@ -30,4 +30,5 @@ interface ServerPackView {
     var confirmedWorking: Int
     var dateCreated: Timestamp
     var fileHash: String
+    var runConfiguration: RunConfiguration
 }

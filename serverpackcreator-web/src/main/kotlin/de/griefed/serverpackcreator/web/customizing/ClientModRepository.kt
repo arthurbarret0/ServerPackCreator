@@ -20,11 +20,7 @@
 package de.griefed.serverpackcreator.web.customizing
 
 import de.griefed.serverpackcreator.web.data.ClientMod
-import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
-import java.util.*
 
 @Repository
-interface ClientModRepository : JpaRepository<ClientMod, Int> {
-    fun findByMod(mod: String) : Optional<ClientMod>
-}
+interface ClientModRepository : ModRepository<ClientMod, Int>

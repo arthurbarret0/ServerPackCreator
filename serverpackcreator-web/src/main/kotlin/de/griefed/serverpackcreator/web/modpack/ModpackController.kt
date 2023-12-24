@@ -20,6 +20,7 @@
 package de.griefed.serverpackcreator.web.modpack
 
 import de.griefed.serverpackcreator.web.NotificationService
+import de.griefed.serverpackcreator.web.customizing.RunConfigurationService
 import de.griefed.serverpackcreator.web.data.ModPackView
 import de.griefed.serverpackcreator.web.task.TaskDetail
 import de.griefed.serverpackcreator.web.task.TaskExecutionServiceImpl
@@ -38,6 +39,7 @@ import org.springframework.web.multipart.MultipartFile
 @RequestMapping("/api/v2/modpacks")
 class ModpackController @Autowired constructor(
     private val modpackService: ModpackService,
+    private val runConfigurationService: RunConfigurationService,
     private val notificationService: NotificationService,
     private val taskExecutionServiceImpl: TaskExecutionServiceImpl
 ) {
@@ -63,6 +65,7 @@ class ModpackController @Autowired constructor(
         @RequestParam("minecraftVersion") minecraftVersion: String,
         @RequestParam("modloader") modloader: String,
         @RequestParam("modloaderVersion") modloaderVersion: String,
+        @RequestParam("startArgs") startArgs: String,
         @RequestParam("clientMods") clientMods: String,
         @RequestParam("whiteListMods") whiteListMods: String
     ): ResponseEntity<String> {
@@ -85,15 +88,12 @@ class ModpackController @Autowired constructor(
                     )
                 )
         }
-        val modpack = modpackService.saveZipModpack(
-            file,
-            minecraftVersion,
-            modloader,
-            modloaderVersion,
-            clientMods,
-            whiteListMods
+        val modpack = modpackService.saveZipModpack(file)
+        val taskDetail = TaskDetail(modpack)
+        taskDetail.runConfiguration = runConfigurationService.createRunConfig(
+            minecraftVersion, modloader, modloaderVersion, startArgs, clientMods, whiteListMods
         )
-        taskExecutionServiceImpl.submitTaskInQueue(TaskDetail(modpack))
+        taskExecutionServiceImpl.submitTaskInQueue(taskDetail)
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
             .body(
                 notificationService.zipResponse(
@@ -101,7 +101,7 @@ class ModpackController @Autowired constructor(
                     timeout = 5000,
                     icon = "info",
                     colour = "positive",
-                    file.name,
+                    modpack.id.toString(),
                     true
                 )
             )

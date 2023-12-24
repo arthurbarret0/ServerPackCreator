@@ -19,8 +19,27 @@
  */
 package de.griefed.serverpackcreator.web.customizing
 
+import de.griefed.serverpackcreator.web.data.ClientMod
+import de.griefed.serverpackcreator.web.data.RunConfiguration
 import de.griefed.serverpackcreator.web.data.WhitelistedMod
+import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
+import java.util.*
 
 @Repository
-interface WhitelistedModRepository : ModRepository<WhitelistedMod, Int>
+interface RunConfigurationRepository : JpaRepository<RunConfiguration, Int> {
+    // lol, dat method name
+    fun findByMinecraftVersionAndModloaderAndModloaderVersionAndStartArgsAndClientModsInAndWhitelistedModsIn(
+        minecraftVersion: String,
+        modloader: String,
+        modloaderVersion: String,
+        startArgs: String,
+        clientMods: Collection<ClientMod>,
+        whitelistedMods: Collection<WhitelistedMod>
+    ): Optional<RunConfiguration>
+
+    fun findAllByMinecraftVersion(minecraftVersion: String): List<RunConfiguration>
+    fun findAllByModloader(modloader: String): List<RunConfiguration>
+    fun findAllByModloaderVersion(modloaderVersion: String): List<RunConfiguration>
+    fun findAllByModloaderAndModloaderVersion(modloader: String, modloaderVersion: String): List<RunConfiguration>
+}

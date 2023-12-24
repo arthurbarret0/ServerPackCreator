@@ -88,7 +88,7 @@ class TaskExecutionServiceImpl @Autowired constructor(
     private fun processTask(taskDetail: TaskDetail) {
         logger.info("Running on Thread ${Thread.currentThread().name}")
         when (taskDetail.modpack.status) {
-            ModpackStatus.QUEUED -> checkModpack(taskDetail.modpack)
+            ModpackStatus.QUEUED -> checkModpack(taskDetail)
             ModpackStatus.CHECKED -> {
                 if (taskDetail.modpack.source == ModpackSource.ZIP) {
                     generateFromZip(taskDetail)
@@ -101,25 +101,24 @@ class TaskExecutionServiceImpl @Autowired constructor(
         }
     }
 
-    private fun checkModpack(modpack: ModPack) {
-        logger.info("Performing Modpack check for modpack : ${modpack.id}")
-        val zipFile = modpackService.getModPackArchive(modpack)
+    private fun checkModpack(taskDetail: TaskDetail) {
+        logger.info("Performing Modpack check for modpack : ${taskDetail.modpack.id}")
+        val zipFile = modpackService.getModPackArchive(taskDetail.modpack)
         if (zipFile.isEmpty) {
-            throw StorageException("ModPack-file for ${modpack.id} not found.")
+            throw StorageException("ModPack-file for ${taskDetail.modpack.id} not found.")
         }
-        modpack.status = ModpackStatus.CHECKING
-        modpackService.saveModpack(modpack)
-        val packConfig = modpackService.getPackConfigForModpack(modpack)
+        taskDetail.modpack.status = ModpackStatus.CHECKING
+        modpackService.saveModpack(taskDetail.modpack)
+        val packConfig = modpackService.getPackConfigForModpack(taskDetail.modpack, taskDetail.runConfiguration!!)
         val check = configurationHandler.checkConfiguration(packConfig)
         if (check.allChecksPassed) {
-            modpack.status = ModpackStatus.CHECKED
-            val taskDetail = TaskDetail(modpack)
+            taskDetail.modpack.status = ModpackStatus.CHECKED
             taskDetail.packConfig = packConfig
             submitTaskInQueue(taskDetail)
         } else {
-            modpack.status = ModpackStatus.ERROR
+            taskDetail.modpack.status = ModpackStatus.ERROR
         }
-        modpackService.saveModpack(modpack)
+        modpackService.saveModpack(taskDetail.modpack)
     }
 
     private fun generateFromModrinth(modpack: ModPack) {
@@ -132,14 +131,15 @@ class TaskExecutionServiceImpl @Autowired constructor(
         logger.info("Server Pack will be generated from uploaded, zipped, modpack : ${taskDetail.modpack.id}")
         taskDetail.modpack.status = ModpackStatus.GENERATING
         modpackService.saveModpack(taskDetail.modpack)
-        if (taskDetail.packConfig == null) {
-            taskDetail.packConfig = modpackService.getPackConfigForModpack(taskDetail.modpack)
+        if (taskDetail.packConfig == null && taskDetail.runConfiguration != null) {
+            taskDetail.packConfig = modpackService.getPackConfigForModpack(taskDetail.modpack, taskDetail.runConfiguration!!)
         }
         if (serverPackHandler.run(taskDetail.packConfig!!)) {
             val destination = serverPackHandler.getServerPackDestination(taskDetail.packConfig!!)
             val serverPackZip = File("${destination}_server_pack.zip").absoluteFile
             val serverPack = ServerPack()
             serverPack.size = serverPackZip.size()
+            serverPack.runConfiguration = taskDetail.runConfiguration
             taskDetail.modpack.serverPacks.addLast(serverPack)
             taskDetail.modpack.status = ModpackStatus.GENERATED
             logger.info("Storing server pack : ${serverPack.id}")

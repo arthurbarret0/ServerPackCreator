@@ -17,8 +17,42 @@
  *
  * The full license can be found at https:github.com/Griefed/ServerPackCreator/blob/main/LICENSE
  */
-package de.griefed.serverpackcreator.web.modpack
+package de.griefed.serverpackcreator.web.data
 
-enum class ModpackSource {
-    ZIP, MODRINTH
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.Id
+
+@Entity
+class ClientMod {
+
+    @Id
+    @GeneratedValue
+    @Column
+    var id: Int = 0
+
+    @Column
+    var mod: String = ""
+
+    constructor(mod: String) {
+        this.mod = mod
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ClientMod
+
+        return mod == other.mod
+    }
+
+    override fun hashCode(): Int {
+        return mod.hashCode()
+    }
+
+    override fun toString(): String {
+        return "ClientMod(id=$id, mod='$mod')"
+    }
 }

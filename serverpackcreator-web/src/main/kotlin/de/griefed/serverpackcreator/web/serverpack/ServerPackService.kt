@@ -19,12 +19,20 @@
  */
 package de.griefed.serverpackcreator.web.serverpack
 
+import de.griefed.serverpackcreator.api.ApiProperties
 import de.griefed.serverpackcreator.web.data.ServerPack
 import de.griefed.serverpackcreator.web.data.ServerPackView
+import de.griefed.serverpackcreator.web.storage.DatabaseStorageService
+import de.griefed.serverpackcreator.web.storage.StorageRepository
+import de.griefed.serverpackcreator.web.storage.StorageSystem
 import org.apache.logging.log4j.kotlin.cachedLoggerOf
+import org.bouncycastle.util.encoders.Hex
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.io.File
+import java.nio.file.Path
+import java.security.MessageDigest
 import java.util.*
 
 /**
@@ -33,11 +41,37 @@ import java.util.*
  * @author Griefed
  */
 @Service
-class ServerPackService @Autowired constructor(private val serverPackRepository: ServerPackRepository) {
+class ServerPackService @Autowired constructor(
+    private val serverPackRepository: ServerPackRepository,
+    private val messageDigestInstance : MessageDigest,
+    apiProperties: ApiProperties,
+    storageRepository: StorageRepository
+) {
     private val log = cachedLoggerOf(this.javaClass)
+    private val rootLocation: Path = apiProperties.serverPacksDirectory.toPath()
+    private val databaseStorage: DatabaseStorageService = DatabaseStorageService(storageRepository, rootLocation)
+    private val storage: StorageSystem = StorageSystem(rootLocation, databaseStorage, messageDigestInstance)
 
     fun getServerPack(id: Int): Optional<ServerPack> {
         return serverPackRepository.findById(id)
+    }
+
+    /**
+     * Increment the download counter for a given server pack entry in the database identified by the
+     * database id.
+     *
+     * @param id The database id of the server pack.
+     * @author Griefed
+     */
+    fun updateDownloadCounter(id: Int): Optional<ServerPack> {
+        val request = serverPackRepository.findById(id)
+        if (request.isPresent) {
+            val pack = request.get()
+            pack.downloads = pack.downloads++
+            return Optional.of(serverPackRepository.save(pack))
+        } else {
+            return Optional.empty()
+        }
     }
 
     /**
@@ -100,22 +134,17 @@ class ServerPackService @Autowired constructor(private val serverPackRepository:
      *
      * @author Griefed
      */
-    fun saveServerPack(
-        serverPack: ServerPack
-    ) {
-        val serverPackFromDB = serverPackRepository.findById(serverPack.id)
-        val pack: ServerPack = if (serverPackFromDB.isPresent) {
-            serverPackFromDB.get()
-        } else {
-            ServerPack()
-        }
-        pack.modpack = serverPack.modpack
-        pack.size = serverPack.size
-        pack.downloads = serverPack.downloads
-        pack.confirmedWorking = serverPack.confirmedWorking
-        pack.modPackFile = serverPack.modPackFile
-        pack.dateCreated = serverPack.dateCreated
-        serverPackRepository.save(pack)
+    fun saveServerPack(serverPack: ServerPack) {
+        serverPackRepository.save(serverPack)
+    }
+
+    fun storeGeneration(file: File, serverPack: ServerPack) {
+        val id = System.currentTimeMillis()
+        val hash = String(Hex.encode(messageDigestInstance.digest(file.readBytes())))
+        databaseStorage.store(file, id, hash)
+        serverPack.fileID = id
+        serverPack.fileHash = hash
+        saveServerPack(serverPack)
     }
 
     /**
@@ -126,5 +155,30 @@ class ServerPackService @Autowired constructor(private val serverPackRepository:
      */
     fun deleteServerPack(serverPack: ServerPack) {
         serverPackRepository.deleteById(serverPack.id)
+    }
+
+    fun deleteServerPack(id: Int) {
+        val serverpack = serverPackRepository.findById(id)
+        if (serverpack.isPresent) {
+            serverPackRepository.deleteById(id)
+            if (serverpack.get().fileID != null) {
+                storage.delete(serverpack.get().fileID!!)
+            }
+        }
+    }
+
+    /**
+     * Get the ZIP-archive of a server pack.
+     *
+     * @param serverPack The serverpack to be stored to disk from the database
+     * @return The modpack-file, wrapped in an [Optional]
+     * @author Griefed
+     */
+    fun getServerPackArchive(serverPack: ServerPack): Optional<File> {
+        return storage.load(serverPack.fileID!!)
+    }
+
+    fun getServerPackArchive(id: Long): Optional<File> {
+        return storage.load(id)
     }
 }

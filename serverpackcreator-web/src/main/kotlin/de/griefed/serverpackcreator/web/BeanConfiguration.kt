@@ -25,11 +25,12 @@ import de.griefed.serverpackcreator.api.*
 import de.griefed.serverpackcreator.api.modscanning.*
 import de.griefed.serverpackcreator.api.utilities.common.*
 import de.griefed.serverpackcreator.api.versionmeta.VersionMeta
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.io.File
+import java.security.MessageDigest
 import javax.xml.parsers.DocumentBuilderFactory
+
 
 /**
  * Bean configuration for running ServerPackCreator as a webservice. This class provides beans for a
@@ -39,7 +40,7 @@ import javax.xml.parsers.DocumentBuilderFactory
  */
 @Configuration
 @Suppress("unused")
-class BeanConfiguration @Autowired constructor() {
+class BeanConfiguration {
 
     @Bean
     fun apiWrapper(): ApiWrapper {
@@ -219,5 +220,10 @@ class BeanConfiguration @Autowired constructor() {
     @Bean
     fun documentBuilder(): DocumentBuilderFactory {
         return apiWrapper().documentBuilderFactory
+    }
+
+    @Bean
+    fun messageDigestInstance(): MessageDigest {
+        return MessageDigest.getInstance("SHA-256")
     }
 }

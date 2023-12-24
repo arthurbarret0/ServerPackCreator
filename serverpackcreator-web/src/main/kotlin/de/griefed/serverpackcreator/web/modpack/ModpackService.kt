@@ -1,10 +1,33 @@
+/* Copyright (C) 2023  Griefed
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
+ * USA
+ *
+ * The full license can be found at https:github.com/Griefed/ServerPackCreator/blob/main/LICENSE
+ */
 package de.griefed.serverpackcreator.web.modpack
 
 import de.griefed.serverpackcreator.api.ApiProperties
+import de.griefed.serverpackcreator.api.ConfigurationHandler
 import de.griefed.serverpackcreator.api.PackConfig
+import de.griefed.serverpackcreator.web.customizing.ClientModRepository
+import de.griefed.serverpackcreator.web.customizing.WhitelistedModRepository
+import de.griefed.serverpackcreator.web.data.ClientMod
 import de.griefed.serverpackcreator.web.data.ModPack
 import de.griefed.serverpackcreator.web.data.ModPackView
-import de.griefed.serverpackcreator.web.storage.DatabaseStorageService
+import de.griefed.serverpackcreator.web.data.WhitelistedMod
 import de.griefed.serverpackcreator.web.storage.StorageRepository
 import de.griefed.serverpackcreator.web.storage.StorageSystem
 import org.springframework.beans.factory.annotation.Autowired
@@ -12,17 +35,20 @@ import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.io.File
 import java.io.IOException
-import java.nio.file.Files
-import java.nio.file.Paths
+import java.nio.file.Path
 import java.util.*
 
 @Service
 class ModpackService @Autowired constructor(
     private val modpackRepository: ModpackRepository,
     private val apiProperties: ApiProperties,
-    private val storageRepository: StorageRepository
+    private val clientModRepository: ClientModRepository,
+    private val whitelistedModRepository: WhitelistedModRepository,
+    private val configurationHandler: ConfigurationHandler,
+    storageRepository: StorageRepository,
 ) {
-    private val modPackStorageSystem: StorageSystem = StorageSystem(apiProperties.modpacksDirectory.toPath(), DatabaseStorageService(storageRepository), )
+    private val rootLocation: Path = apiProperties.modpacksDirectory.toPath()
+    private val storage: StorageSystem = StorageSystem(rootLocation, storageRepository)
 
     fun saveZipModpack(
         file: MultipartFile,
@@ -36,19 +62,41 @@ class ModpackService @Autowired constructor(
         modpack.minecraftVersion = minecraftVersion
         modpack.modloader = modloader
         modpack.modloaderVersion = modloaderVersion
-        modpack.clientMods = clientMods.ifBlank {
-            apiProperties.clientSideMods().joinToString(",")
+        if (clientMods.isNotBlank()) {
+            for (mod in clientMods.replace(", ",",").split(",")) {
+                modpack.clientMods.add(ClientMod(mod))
+            }
+        } else {
+            modpack.clientMods.addAll(apiProperties.clientSideMods().map { ClientMod(it) })
         }
-        modpack.whiteListMods = whiteListMods.ifBlank {
-            apiProperties.whitelistedMods().joinToString(",")
+        for (i in 0 until modpack.clientMods.size) {
+            if (clientModRepository.findByMod(modpack.clientMods[i].mod).isPresent) {
+                modpack.clientMods[i] = clientModRepository.findByMod(modpack.clientMods[i].mod).get()
+            } else {
+                modpack.clientMods[i] = clientModRepository.save(modpack.clientMods[i])
+            }
+        }
+        if (whiteListMods.isNotBlank()) {
+            for (mod in whiteListMods.replace(", ",",").split(",")) {
+                modpack.whitelistedMods.add(WhitelistedMod(mod))
+            }
+        } else {
+            modpack.whitelistedMods.addAll(apiProperties.whitelistedMods().map { WhitelistedMod(it) })
+        }
+        for (i in 0 until modpack.whitelistedMods.size) {
+            if (whitelistedModRepository.findByMod(modpack.whitelistedMods[i].mod).isPresent) {
+                modpack.whitelistedMods[i] = whitelistedModRepository.findByMod(modpack.whitelistedMods[i].mod).get()
+            } else {
+                modpack.whitelistedMods[i] = whitelistedModRepository.save(modpack.whitelistedMods[i])
+            }
         }
         modpack.status = ModpackStatus.QUEUED
         modpack.name = file.originalFilename ?: file.name
         modpack.size = file.size.toDouble()
         modpack.source = ModpackSource.ZIP
-        val storePair = modPackStorageSystem.store(file, System.currentTimeMillis().toInt()).get()
-        modpack.fileID = storePair.first.toInt()
-        modpack.fileHash = storePair.second.toBigInteger()
+        val storePair = storage.store(file).get()
+        modpack.fileID = storePair.first
+        modpack.fileHash = storePair.second
         return modpackRepository.save(modpack)
     }
 
@@ -66,9 +114,12 @@ class ModpackService @Autowired constructor(
 
     fun getPackConfigForModpack(modpack: ModPack): PackConfig {
         val packConfig = PackConfig()
-        packConfig.modpackDir = File(apiProperties.modpacksDirectory, "${modpack.fileID}.zip").absolutePath
-        packConfig.setClientMods(modpack.clientMods.split(",").toMutableList())
-        packConfig.setModsWhitelist(modpack.whiteListMods.split(",").toMutableList())
+        packConfig.modpackDir = rootLocation.resolve("${modpack.fileID}.zip").normalize().toFile().absolutePath
+        packConfig.setClientMods(modpack.clientMods.map { it.mod }.toMutableList())
+        packConfig.setModsWhitelist(modpack.whitelistedMods.map { it.mod }.toMutableList())
+        if (modpack.status == ModpackStatus.GENERATING) {
+            packConfig.inclusions.addAll(configurationHandler.suggestInclusions(packConfig.modpackDir))
+        }
         packConfig.minecraftVersion = modpack.minecraftVersion
         packConfig.modloader = modpack.modloader
         packConfig.modloaderVersion = modpack.modloaderVersion
@@ -77,37 +128,30 @@ class ModpackService @Autowired constructor(
     }
 
     fun deleteModpack(id: Int) {
-        modpackRepository.deleteById(id)
+        val modpack = modpackRepository.findById(id)
+        if (modpack.isPresent) {
+            modpackRepository.deleteById(id)
+            if (modpack.get().fileID != null) {
+                storage.delete(modpack.get().fileID!!)
+            }
+        }
     }
 
     /**
      * Store an uploaded ZIP-archive to disk.
      *
-     * @param modpack The modpack to be stored to disk from the database
-     * @return The path to the saved file.
+     * @param modPack The modpack to be stored to disk from the database
+     * @return The modpack-file, wrapped in an [Optional]
      * @throws IOException If an I/O error occurs writing to or creating the file.
      * @throws IllegalArgumentException If the modpack doesn't have data to export.
      * @author Griefed
      */
     @Throws(IOException::class, IllegalArgumentException::class)
-    fun exportModpackToDisk(modpack: ModPack): File {
-        if (modPackStorageSystem.load(modpack.fileID.toString()).isEmpty) {
-            throw IllegalArgumentException("Modpack ${modpack.id} does not have data to export.")
-        }
-        var zip = File(apiProperties.modpacksDirectory, "${modpack.fileID}.zip").absoluteFile
-        // Does an archive with the same name already exist?
-        if (zip.isFile) {
-            var incrementation = 0
-            val substring = zip.toString().substring(0, zip.toString().length - 4)
-            while (File("${substring}_$incrementation.zip").isFile) {
-                incrementation++
-            }
-            zip = Paths.get("${substring}_$incrementation.zip").toFile()
-        }
-        /*FileOutputStream(zipPath.toFile()).use {
-            IOUtils.copy(modpack.data!!.binaryStream, it)
-        }*/
-        Files.write(zip, modpack.modPackFile!!.data!!)
-        return zip
+    fun getModPackArchive(modPack: ModPack): Optional<File> {
+        return storage.load(modPack.fileID!!)
+    }
+
+    fun getModPackArchive(id: Long): Optional<File> {
+        return storage.load(id)
     }
 }

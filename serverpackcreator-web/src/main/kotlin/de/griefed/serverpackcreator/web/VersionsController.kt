@@ -101,9 +101,9 @@ class VersionsController @Autowired constructor(
             .header("Content-Type", "application/json")
             .body(
                 "{\"fabric\": ${utilities.listUtilities.encapsulateListElements(versionMeta.fabric.loaderVersionsListDescending())}," +
-                "\"legacyfabric\": ${utilities.listUtilities.encapsulateListElements(versionMeta.legacyFabric.loaderVersionsListDescending())}," +
-                "\"quilt\": ${utilities.listUtilities.encapsulateListElements(versionMeta.quilt.loaderVersionsListDescending())}," +
-                "\"neoforge\": ${utilities.listUtilities.encapsulateListElements(versionMeta.neoForge.neoForgeVersionsDescending())}}"
+                        "\"legacyfabric\": ${utilities.listUtilities.encapsulateListElements(versionMeta.legacyFabric.loaderVersionsListDescending())}," +
+                        "\"quilt\": ${utilities.listUtilities.encapsulateListElements(versionMeta.quilt.loaderVersionsListDescending())}," +
+                        "\"neoforge\": ${utilities.listUtilities.encapsulateListElements(versionMeta.neoForge.neoForgeVersionsDescending())}}"
             )
 
     /**

@@ -17,24 +17,14 @@
  *
  * The full license can be found at https:github.com/Griefed/ServerPackCreator/blob/main/LICENSE
  */
-package de.griefed.serverpackcreator.gui.window.settings.components
+package de.griefed.serverpackcreator.web.customizing
 
-import de.griefed.serverpackcreator.api.ApiProperties
-import de.griefed.serverpackcreator.gui.components.BaseFileChooser
+import de.griefed.serverpackcreator.web.data.WhitelistedMod
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.stereotype.Repository
+import java.util.*
 
-/**
- * Customized filechooser for picking ServerPackCreator Artemis Data-directory.
- *
- * @author Griefed
- */
-class ArtemisDataDirChooser(apiProperties: ApiProperties, title: String) : BaseFileChooser() {
-    init {
-        currentDirectory = apiProperties.artemisDataDirectory
-        dialogTitle = title
-        fileSelectionMode = DIRECTORIES_ONLY
-        isAcceptAllFileFilterUsed = false
-        isMultiSelectionEnabled = false
-        dialogType = SAVE_DIALOG
-        fileFilter = WritableDirectoryFilter()
-    }
+@Repository
+interface WhitelistedModRepository : JpaRepository<WhitelistedMod, Int> {
+    fun findByMod(mod: String) : Optional<WhitelistedMod>
 }

@@ -17,8 +17,14 @@
  *
  * The full license can be found at https:github.com/Griefed/ServerPackCreator/blob/main/LICENSE
  */
-package de.griefed.serverpackcreator.web.modpack
+package de.griefed.serverpackcreator.web.customizing
 
-enum class ModpackSource {
-    ZIP, MODRINTH
+import de.griefed.serverpackcreator.web.data.ClientMod
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.stereotype.Repository
+import java.util.*
+
+@Repository
+interface ClientModRepository : JpaRepository<ClientMod, Int> {
+    fun findByMod(mod: String) : Optional<ClientMod>
 }

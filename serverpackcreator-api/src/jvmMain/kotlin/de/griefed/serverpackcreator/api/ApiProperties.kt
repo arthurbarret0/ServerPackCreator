@@ -134,8 +134,6 @@ actual class ApiProperties(
         "server.tomcat.basedir"
     private val pTomcatLogsDirectory =
         "server.tomcat.accesslog.directory"
-    private val pArtemisDataDirectory =
-        "spring.artemis.embedded.data-directory"
     private val pSpringDatasourceUrl =
         "spring.datasource.url"
 
@@ -1319,8 +1317,8 @@ actual class ApiProperties(
             internalProps.setProperty("de.griefed.serverpackcreator.spring.schedules.files.cleanup", value)
         }
 
-    fun defaultWebserviceDatabase(): File {
-        return File(home, "serverpackcreator.db")
+    fun defaultWebserviceDatabase(): String {
+        return "jdbc\\:postgresql\\://localhost\\:5432/serverpackcreator"
     }
 
     fun defaultArtemisDataDirectory(): File {
@@ -1410,8 +1408,13 @@ actual class ApiProperties(
     @Suppress("MemberVisibilityCanBePrivate")
     var tomcatBaseDirectory: File = homeDirectory
         get() {
-            val default = homeDirectory.absolutePath
-            val dir = internalProps.getProperty(pTomcatBaseDirectory, default)
+            val prop = internalProps.getProperty(pTomcatBaseDirectory, homeDirectory.absolutePath)
+            val dir = if (prop != homeDirectory.absolutePath) {
+                internalProps.setProperty(pTomcatBaseDirectory, homeDirectory.absolutePath)
+                homeDirectory.absolutePath
+            } else {
+                internalProps.getProperty(pTomcatBaseDirectory, homeDirectory.absolutePath)
+            }
             field = File(dir).absoluteFile
             return field
         }
@@ -1714,23 +1717,6 @@ actual class ApiProperties(
         private set
 
     /**
-     * Data directory for Artemis` queue-processing.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    var artemisDataDirectory: File = File(workDirectory, "artemis").absoluteFile
-        get() {
-            val default = File(workDirectory, "artemis").absolutePath
-            val dir = internalProps.getProperty(pArtemisDataDirectory, default)
-            field = File(dir).absoluteFile
-            return field
-        }
-        set(value) {
-            internalProps.setProperty(pArtemisDataDirectory, value.absolutePath)
-            field = value.absoluteFile
-            log.info("Set Artemis data-directory to: $field")
-        }
-
-    /**
      * Temp-directory storing files and folders required temporarily during the run of a server pack
      * generation or other operations.
      *
@@ -1829,20 +1815,6 @@ actual class ApiProperties(
             return field
         }
         private set
-
-    /**
-     * The database used by the webservice-portion of ServerPackCreator to do store and provide server packs and
-     * related information.
-     */
-    var serverPackCreatorDatabase: File = File(jdbcDatabaseUrl.replace("jdbc:sqlite:", "")).absoluteFile
-        get() {
-            field = File(jdbcDatabaseUrl.replace("jdbc:sqlite:", "")).absoluteFile
-            return field
-        }
-        set(value) {
-            field = value.absoluteFile
-            jdbcDatabaseUrl = field.absolutePath
-        }
 
     /**
      * Directory in which plugins for ServerPackCreator are to be placed in.
@@ -1955,6 +1927,7 @@ actual class ApiProperties(
         }
 
         internalProps.putAll(props)
+        internalProps.setProperty(pTomcatBaseDirectory, homeDirectory.absolutePath)
 
         if (updateFallback()) {
             log.info("Fallback lists updated.")
@@ -2494,7 +2467,6 @@ actual class ApiProperties(
         manifestsDirectory.createDirectories(create = true, directory = true)
         minecraftServerManifestsDirectory.createDirectories(create = true, directory = true)
         installerCacheDirectory.createDirectories(create = true, directory = true)
-        artemisDataDirectory.createDirectories(create = true, directory = true)
         printSettings()
     }
 
@@ -2509,7 +2481,6 @@ actual class ApiProperties(
         log.info("Set Tomcat base-directory to:       $tomcatBaseDirectory")
         log.info("Server packs directory set to:      $serverPacksDirectory")
         log.info("Set Tomcat logs-directory to:       $tomcatLogsDirectory")
-        log.info("Set Artemis data-directory to:      $artemisDataDirectory")
         log.info("Checking for pre-releases set to:   $isCheckingForPreReleasesEnabled")
         log.info("Zip-file exclusion enabled set to:  $isZipFileExclusionEnabled")
         log.info("HasteBin documents endpoint set to: $hasteBinServerUrl")

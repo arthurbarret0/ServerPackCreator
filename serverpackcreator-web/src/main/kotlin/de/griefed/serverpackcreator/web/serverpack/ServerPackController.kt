@@ -20,6 +20,7 @@
 package de.griefed.serverpackcreator.web.serverpack
 
 import de.griefed.serverpackcreator.web.data.ServerPackView
+import de.griefed.serverpackcreator.web.modpack.ModpackRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.Resource
@@ -37,7 +38,10 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @CrossOrigin(origins = ["*"])
 @RequestMapping("/api/v2/serverpacks")
-class ServerPackController @Autowired constructor(private val serverPackService: ServerPackService) {
+class ServerPackController @Autowired constructor(
+    private val serverPackService: ServerPackService,
+    private val modpackRepository: ModpackRepository
+) {
 
     /**
      * GET request for downloading a server pack by the id in the database.
@@ -50,15 +54,21 @@ class ServerPackController @Autowired constructor(private val serverPackService:
     @ResponseBody
     fun downloadServerPack(@PathVariable id: Int): ResponseEntity<Resource> {
         val serverPack = serverPackService.getServerPack(id)
-        return if (serverPack.isPresent && serverPack.get().modPackFile != null) {
-            serverPackService.updateDownloadCounter(serverPack.get())
-            ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("application/zip"))
-                .header(
-                    HttpHeaders.CONTENT_DISPOSITION,
-                    "attachment; filename=\"${serverPack.get().modpack!!.name}_server_pack.zip\""
-                )
-                .body(ByteArrayResource(serverPack.get().modPackFile!!.data!!))
+        return if (serverPack.isPresent) {
+            val archive = serverPackService.getServerPackArchive(serverPack.get().fileID!!)
+            if (archive.isEmpty) {
+                ResponseEntity.notFound().build()
+            } else {
+                val modPack = modpackRepository.findByServerPacksContains(serverPack.get())
+                serverPackService.updateDownloadCounter(id)
+                ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("application/zip"))
+                    .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"${modPack.get().name}_server_pack.zip\""
+                    )
+                    .body(ByteArrayResource(archive.get().readBytes()))
+            }
         } else {
             ResponseEntity.notFound().build()
         }

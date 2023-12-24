@@ -1,16 +1,35 @@
+/* Copyright (C) 2023  Griefed
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
+ * USA
+ *
+ * The full license can be found at https:github.com/Griefed/ServerPackCreator/blob/main/LICENSE
+ */
 package de.griefed.serverpackcreator.web.task
 
 import de.griefed.serverpackcreator.api.ConfigurationHandler
 import de.griefed.serverpackcreator.api.ServerPackHandler
 import de.griefed.serverpackcreator.api.utilities.common.deleteQuietly
 import de.griefed.serverpackcreator.api.utilities.common.size
-import de.griefed.serverpackcreator.web.data.ModPackFile
 import de.griefed.serverpackcreator.web.data.ModPack
 import de.griefed.serverpackcreator.web.data.ServerPack
 import de.griefed.serverpackcreator.web.modpack.ModpackService
 import de.griefed.serverpackcreator.web.modpack.ModpackSource
 import de.griefed.serverpackcreator.web.modpack.ModpackStatus
 import de.griefed.serverpackcreator.web.serverpack.ServerPackService
+import de.griefed.serverpackcreator.web.storage.StorageException
 import org.apache.logging.log4j.kotlin.KotlinLogger
 import org.apache.logging.log4j.kotlin.cachedLoggerOf
 import org.springframework.beans.factory.annotation.Autowired
@@ -72,35 +91,33 @@ class TaskExecutionServiceImpl @Autowired constructor(
             ModpackStatus.QUEUED -> checkModpack(taskDetail.modpack)
             ModpackStatus.CHECKED -> {
                 if (taskDetail.modpack.source == ModpackSource.ZIP) {
-                    generateFromZip(taskDetail.modpack)
+                    generateFromZip(taskDetail)
                 } else {
                     generateFromModrinth(taskDetail.modpack)
                 }
             }
+
             else -> logger.error("${taskDetail.modpack.status} does not merit unique processing.")
         }
     }
 
     private fun checkModpack(modpack: ModPack) {
         logger.info("Performing Modpack check for modpack : ${modpack.id}")
-        val exportedZip = modpackService.exportModpackToDisk(modpack)
+        val zipFile = modpackService.getModPackArchive(modpack)
+        if (zipFile.isEmpty) {
+            throw StorageException("ModPack-file for ${modpack.id} not found.")
+        }
         modpack.status = ModpackStatus.CHECKING
         modpackService.saveModpack(modpack)
-        modpack.file = exportedZip.absolutePath
         val packConfig = modpackService.getPackConfigForModpack(modpack)
         val check = configurationHandler.checkConfiguration(packConfig)
-        if (modpack.file != packConfig.modpackDir) {
-            File(modpack.file).deleteQuietly()
-        }
-        modpack.file = packConfig.modpackDir
         if (check.allChecksPassed) {
             modpack.status = ModpackStatus.CHECKED
-            submitTaskInQueue(TaskDetail(modpack))
+            val taskDetail = TaskDetail(modpack)
+            taskDetail.packConfig = packConfig
+            submitTaskInQueue(taskDetail)
         } else {
             modpack.status = ModpackStatus.ERROR
-            exportedZip.deleteQuietly()
-            File(packConfig.modpackDir).deleteQuietly()
-            modpack.file = ""
         }
         modpackService.saveModpack(modpack)
     }
@@ -111,30 +128,27 @@ class TaskExecutionServiceImpl @Autowired constructor(
         /*logger.info("Server Pack generated.")*/
     }
 
-    private fun generateFromZip(modpack: ModPack) {
-        logger.info("Server Pack will be generated from uploaded, zipped, modpack : ${modpack.id}")
-        modpack.status = ModpackStatus.GENERATING
-        modpackService.saveModpack(modpack)
-        val packConfig = modpackService.getPackConfigForModpack(modpack)
-        if (serverPackHandler.run(packConfig)) {
-            val destination = serverPackHandler.getServerPackDestination(packConfig)
-            val serverPackZip = File("${destination}_server_pack.zip")
+    private fun generateFromZip(taskDetail: TaskDetail) {
+        logger.info("Server Pack will be generated from uploaded, zipped, modpack : ${taskDetail.modpack.id}")
+        taskDetail.modpack.status = ModpackStatus.GENERATING
+        modpackService.saveModpack(taskDetail.modpack)
+        if (taskDetail.packConfig == null) {
+            taskDetail.packConfig = modpackService.getPackConfigForModpack(taskDetail.modpack)
+        }
+        if (serverPackHandler.run(taskDetail.packConfig!!)) {
+            val destination = serverPackHandler.getServerPackDestination(taskDetail.packConfig!!)
+            val serverPackZip = File("${destination}_server_pack.zip").absoluteFile
             val serverPack = ServerPack()
-            serverPack.modpack = modpack
-            serverPack.size = serverPackZip.size().div(1048576.0)
-            serverPack.modPackFile = ModPackFile()
-            serverPack.modPackFile!!.data = serverPackZip.readBytes()
-            modpack.serverPack.addLast(serverPack)
-            modpack.status = ModpackStatus.GENERATED
+            serverPack.size = serverPackZip.size()
+            taskDetail.modpack.serverPacks.addLast(serverPack)
+            taskDetail.modpack.status = ModpackStatus.GENERATED
             logger.info("Storing server pack : ${serverPack.id}")
-            serverPackService.saveServerPack(serverPack)
+            serverPackService.storeGeneration(serverPackZip, serverPack)
             File(destination).deleteQuietly()
         } else {
-            modpack.status = ModpackStatus.ERROR
+            taskDetail.modpack.status = ModpackStatus.ERROR
         }
-        File(modpack.file).deleteQuietly()
-        modpack.file = ""
-        modpackService.saveModpack(modpack)
+        modpackService.saveModpack(taskDetail.modpack)
         logger.info("Server Pack generated.")
     }
 

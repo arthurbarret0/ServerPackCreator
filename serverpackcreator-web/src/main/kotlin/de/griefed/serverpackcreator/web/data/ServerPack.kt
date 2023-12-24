@@ -24,7 +24,6 @@ import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import org.hibernate.annotations.CreationTimestamp
-import java.math.BigInteger
 import java.sql.Timestamp
 
 @Entity
@@ -33,7 +32,7 @@ class ServerPack {
     @Id
     @GeneratedValue
     @Column(updatable = false, nullable = false)
-    var id = 0
+    var id: Int = 0
 
     @Column
     var size: Double = 0.0
@@ -49,10 +48,10 @@ class ServerPack {
     var dateCreated: Timestamp? = null
 
     @Column
-    var fileID: Int? = null
+    var fileID: Long? = null
 
     @Column
-    var fileHash: BigInteger? = null
+    var fileHash: String? = null
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

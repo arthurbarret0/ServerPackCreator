@@ -365,6 +365,9 @@ actual class ForgeMeta actual constructor(
             Optional.empty()
         }
 
+    fun getForgeMeta(): HashMap<String,List<String>> {
+        return forgeLoader!!.versionMeta
+    }
 
     /**
      * Installer file for the specified [forgeVersion] and [minecraftVersion] version, wrapped in an [Optional], so you

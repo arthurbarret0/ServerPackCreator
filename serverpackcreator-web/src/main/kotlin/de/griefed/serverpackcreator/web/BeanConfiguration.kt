@@ -39,7 +39,6 @@ import javax.xml.parsers.DocumentBuilderFactory
  * @author Griefed
  */
 @Configuration
-@Suppress("unused")
 class BeanConfiguration {
 
     @Bean

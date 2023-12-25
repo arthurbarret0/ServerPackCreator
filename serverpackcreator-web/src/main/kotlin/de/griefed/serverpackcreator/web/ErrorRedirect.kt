@@ -19,39 +19,26 @@
  */
 package de.griefed.serverpackcreator.web
 
+import org.springframework.boot.web.servlet.error.ErrorController
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.ModelAndView
 
 /**
- * Simple route controller to ensure some destinations let the user arrive where we want them to,
- * otherwise, we redirect. Because our router mode in VueJS is set to hash, we receive a 404 when we
- * try to access, say, /downloads directly. So we need to redirect to /#/downloads instead, for
- * example.
+ * Custom error controller which redirects to our /#/error page in case of 404 etc.
  *
  * @author Griefed
  */
 @RestController
-class RouteController {
+class ErrorRedirect : ErrorController {
     /**
-     * Redirect /downloads to /#/downloads.
+     * Redirect all unknown paths to our 404-page.
      *
-     * @return Redirects requests for /downloads to /#/downloads
+     * @return Redirects the requester to our error page.
      * @author Griefed
      */
-    @RequestMapping("/downloads")
-    fun redirectDownloads(): ModelAndView {
-        return ModelAndView("redirect:/#/downloads")
-    }
-
-    /**
-     * Redirect /about to /#/about.
-     *
-     * @return Redirects requests for /about to /#/about
-     * @author Griefed
-     */
-    @RequestMapping("/about")
-    fun redirectAbout(): ModelAndView {
-        return ModelAndView("redirect:/#/about")
+    @RequestMapping(value = ["/error"])
+    fun error(): ModelAndView {
+        return ModelAndView("redirect:/#/error")
     }
 }

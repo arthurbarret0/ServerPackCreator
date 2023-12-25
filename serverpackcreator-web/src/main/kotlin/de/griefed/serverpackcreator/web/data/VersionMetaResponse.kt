@@ -17,29 +17,13 @@
  *
  * The full license can be found at https:github.com/Griefed/ServerPackCreator/blob/main/LICENSE
  */
-package de.griefed.serverpackcreator.web
+package de.griefed.serverpackcreator.web.data
 
-import org.springframework.boot.web.servlet.error.ErrorController
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.servlet.ModelAndView
-
-/**
- * Custom error controller which redirects to our /#/error page in case of 404 etc.
- *
- * @author Griefed
- */
-@RestController
-@Suppress("unused")
-class CustomErrorController : ErrorController {
-    /**
-     * Redirect all unknown paths to our 404-page.
-     *
-     * @return Redirects the requester to our error page.
-     * @author Griefed
-     */
-    @RequestMapping(value = ["/error"])
-    fun error(): ModelAndView {
-        return ModelAndView("redirect:/#/error")
-    }
-}
+class VersionMetaResponse(
+    val minecraft: List<String>,
+    val fabric: List<String>,
+    val legacyFabric: List<String>,
+    val quilt: List<String>,
+    val forge: HashMap<String, List<String>>,
+    val neoForge: List<String>
+)

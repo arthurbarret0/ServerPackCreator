@@ -20,12 +20,13 @@
 package de.griefed.serverpackcreator.web
 
 import de.griefed.serverpackcreator.api.ApiProperties
+import de.griefed.serverpackcreator.api.ExclusionFilter
 import de.griefed.serverpackcreator.api.utilities.common.Utilities
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.CrossOrigin
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.http.HttpHeaders
+import org.springframework.http.ResponseEntity
+import org.springframework.util.MimeTypeUtils
+import org.springframework.web.bind.annotation.*
 
 /**
  * RestController for acquiring the configuration of this ServerPackCreator instance.
@@ -35,27 +36,48 @@ import org.springframework.web.bind.annotation.RestController
 @Suppress("unused")
 @RestController
 @CrossOrigin(origins = ["*"])
-@RequestMapping("/api/v1/settings")
+@RequestMapping("/api/v2/settings")
 class ApplicationPropertiesController @Autowired constructor(
     private val apiProperties: ApiProperties,
     private val utilities: Utilities
 ) {
-    //TODO v2 with more configurations
-    @get:GetMapping(produces = ["application/json"])
-    val configuration: String
-        get() = (((("{"
-                + "\"listFallbackMods\":"
-                + utilities.listUtilities.encapsulateListElements(apiProperties.clientSideMods())
-                ) + ","
-                + "\"listDirectoriesExclude\":"
-                + utilities.listUtilities
-            .encapsulateListElements(apiProperties.directoriesToExclude.toList())
-                ) + ","
-                + "\"serverPackCreatorVersion\":\""
-                + apiProperties.apiVersion
-                ) + "\","
-                + "\"supportedModloaders\":"
-                + utilities.listUtilities
-            .encapsulateListElements(apiProperties.supportedModloaders.toList())
-                ) + "}"
+
+    @GetMapping("/current", produces = ["application/json"])
+    @ResponseBody
+    fun getProperties(): ResponseEntity<ApplicationProperties> {
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+            .body(ApplicationProperties(
+                clientsideMods = apiProperties.clientSideMods(),
+                whitelistMods = apiProperties.whitelistedMods(),
+                supportedModloaders = apiProperties.supportedModloaders.toList(),
+                version = apiProperties.apiVersion,
+                devBuild = apiProperties.devBuild,
+                directoriesToInclude = apiProperties.directoriesToInclude.toList(),
+                directoriesToExclude = apiProperties.directoriesToExclude.toList(),
+                zipArchiveExclusions = apiProperties.zipArchiveExclusions.toList(),
+                exclusionFilter = apiProperties.exclusionFilter,
+                isZipFileExclusionEnabled = apiProperties.isZipFileExclusionEnabled,
+                isAutoExcludingModsEnabled = apiProperties.isAutoExcludingModsEnabled,
+                isMinecraftPreReleasesAvailabilityEnabled = apiProperties.isMinecraftPreReleasesAvailabilityEnabled,
+                aikarsFlags = apiProperties.aikarsFlags,
+                language = apiProperties.language.toString()
+            ))
+    }
+
+    inner class ApplicationProperties(
+        val clientsideMods: List<String>,
+        val whitelistMods: List<String>,
+        val supportedModloaders: List<String>,
+        val version: String,
+        val devBuild: Boolean,
+        val directoriesToInclude: List<String>,
+        val directoriesToExclude: List<String>,
+        val zipArchiveExclusions: List<String>,
+        val exclusionFilter: ExclusionFilter,
+        val isZipFileExclusionEnabled: Boolean,
+        val isAutoExcludingModsEnabled: Boolean,
+        val isMinecraftPreReleasesAvailabilityEnabled: Boolean,
+        val aikarsFlags: String,
+        val language: String
+    )
 }

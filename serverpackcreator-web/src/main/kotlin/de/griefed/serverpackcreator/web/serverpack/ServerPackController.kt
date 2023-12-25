@@ -19,6 +19,7 @@
  */
 package de.griefed.serverpackcreator.web.serverpack
 
+import de.griefed.serverpackcreator.web.data.ServerPack
 import de.griefed.serverpackcreator.web.data.ServerPackView
 import de.griefed.serverpackcreator.web.modpack.ModpackRepository
 import org.springframework.beans.factory.annotation.Autowired
@@ -27,6 +28,7 @@ import org.springframework.core.io.Resource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.util.MimeTypeUtils
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -44,13 +46,13 @@ class ServerPackController @Autowired constructor(
 ) {
 
     /**
-     * GET request for downloading a server pack by the id in the database.
+     * Download a server pack by its ID.
      *
-     * @param id The id of the server pack in the database.
+     * @param id The id of the server pack.
      * @return Gives the requester the requested file as a download, if it was found.
      * @author Griefed
      */
-    @GetMapping(value = ["/download/{id}"], produces = ["application/zip"])
+    @GetMapping(value = ["/download/{id:[0-9]+}"], produces = ["application/zip"])
     @ResponseBody
     fun downloadServerPack(@PathVariable id: Int): ResponseEntity<Resource> {
         val serverPack = serverPackService.getServerPack(id)
@@ -75,15 +77,58 @@ class ServerPackController @Autowired constructor(
     }
 
     /**
-     * GET request for retrieving a list of all available server packs.
+     * Download a server pack by the modpack and run-configuration ID.
      *
-     * @return A list of all available server packs on this instance.
+     * @param modPackId The id of the modpack from which the server pack was generated.
+     * @param runConfigurationId The ID of the run-configuration with which the server pack was generated.
+     * @return Gives the requester the requested file as a download, if it was found.
+     * @author Griefed
+     */
+    @GetMapping(value = ["/download/{modPackId:[0-9]+}&{runConfigurationId:[0-9]+}"], produces = ["application/zip"])
+    @ResponseBody
+    fun downloadServerPack(
+        @PathVariable modPackId: Int,
+        @PathVariable runConfigurationId: Int
+    ): ResponseEntity<Resource> {
+        val modpack =
+            modpackRepository.findById(modPackId)
+        if (modpack.isEmpty) {
+            return ResponseEntity.notFound().build()
+        }
+        var serverpack: ServerPack? = null
+        for (pack in modpack.get().serverPacks) {
+            if (pack.runConfiguration!!.id == runConfigurationId) {
+                serverpack = pack
+            }
+        }
+        if (serverpack == null) {
+            return ResponseEntity.notFound().build()
+        }
+        val archive = serverPackService.getServerPackArchive(serverpack.fileID!!)
+        return if (archive.isEmpty) {
+            ResponseEntity.notFound().build()
+        } else {
+            val modPack = modpackRepository.findByServerPacksContains(serverpack)
+            serverPackService.updateDownloadCounter(serverpack.id)
+            ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .header(
+                    HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=\"${modPack.get().name}_server_pack.zip\""
+                )
+                .body(ByteArrayResource(archive.get().readBytes()))
+        }
+    }
+
+    /**
+     * Retrieve a list of all available server packs.
+     *
      * @author Griefed
      */
     @GetMapping("/all", produces = ["application/json"])
     @ResponseBody
     fun getAllServerPacks(): ResponseEntity<List<ServerPackView>> {
-        return ResponseEntity.ok().header("Content-Type", "application/json").body(
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE).body(
             serverPackService.getServerPacks()
         )
     }

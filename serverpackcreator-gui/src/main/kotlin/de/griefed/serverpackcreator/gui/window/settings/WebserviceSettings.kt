@@ -51,12 +51,6 @@ class WebserviceSettings(
     private val cronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING)
     private val cronParser = CronParser(cronDefinition)
 
-    private val artemisQueueMaxDiskUsageIcon = StatusIcon(guiProps,Gui.settings_webservice_artemisusage_tooltip.toString())
-    private val artemisQueueMaxDiskUsageLabel = ElementLabel(Gui.settings_webservice_artemisusage_label.toString())
-    private val artemisQueueMaxDiskUsageSetting = ActionSlider(10,90,apiProperties.artemisQueueMaxDiskUsage, changeListener)
-    private val artemisQueueMaxDiskUsageRevert = BalloonTipButton(null, guiProps.revertIcon,Gui.settings_revert.toString(), guiProps) { artemisQueueMaxDiskUsageSetting.value = apiProperties.artemisQueueMaxDiskUsage }
-    private val artemisQueueMaxDiskUsageReset = BalloonTipButton(null, guiProps.resetIcon,Gui.settings_reset.toString(), guiProps) { artemisQueueMaxDiskUsageSetting.value = apiProperties.fallbackArtemisQueueMaxDiskUsage }
-
     private val databaseURLIcon = StatusIcon(guiProps,Gui.settings_webservice_database_tooltip.toString())
     private val databaseURLLabel = ElementLabel(Gui.settings_webservice_database_label.toString())
     private val databaseURLSetting = ScrollTextField(guiProps, apiProperties.jdbcDatabaseUrl, Gui.settings_webservice_database_label.toString()) //TODO add editor for password and username
@@ -121,17 +115,7 @@ class WebserviceSettings(
 
     init {
         loadSettings()
-        artemisQueueMaxDiskUsageSetting.paintTicks = true
-        artemisQueueMaxDiskUsageSetting.paintLabels = true
-        artemisQueueMaxDiskUsageSetting.majorTickSpacing = 10
-        artemisQueueMaxDiskUsageSetting.minorTickSpacing = 5
-
         var y = 0
-        panel.add(artemisQueueMaxDiskUsageIcon, "cell 0 $y")
-        panel.add(artemisQueueMaxDiskUsageLabel, "cell 1 $y")
-        panel.add(artemisQueueMaxDiskUsageSetting, "cell 2 $y, grow")
-        panel.add(artemisQueueMaxDiskUsageRevert, "cell 3 $y")
-        panel.add(artemisQueueMaxDiskUsageReset, "cell 4 $y")
 
         y++
         panel.add(databaseURLIcon, "cell 0 $y")
@@ -182,7 +166,6 @@ class WebserviceSettings(
      * @author Griefed
      */
     override fun loadSettings() {
-        artemisQueueMaxDiskUsageSetting.value = apiProperties.artemisQueueMaxDiskUsage
         databaseURLSetting.text = apiProperties.jdbcDatabaseUrl
         cleanupScheduleSetting.text = apiProperties.webserviceCleanupSchedule
         logDirectorySetting.file = apiProperties.tomcatLogsDirectory.absoluteFile
@@ -195,7 +178,6 @@ class WebserviceSettings(
      * @author Griefed
      */
     override fun saveSettings() {
-        apiProperties.artemisQueueMaxDiskUsage = artemisQueueMaxDiskUsageSetting.value
         apiProperties.jdbcDatabaseUrl = databaseURLSetting.text
         apiProperties.webserviceCleanupSchedule = cleanupScheduleSetting.text
         apiProperties.tomcatLogsDirectory = logDirectorySetting.file.absoluteFile
@@ -209,13 +191,6 @@ class WebserviceSettings(
      */
     override fun validateSettings(): List<String> {
         val errors = mutableListOf<String>()
-
-        if (artemisQueueMaxDiskUsageSetting.value < 10 || artemisQueueMaxDiskUsageSetting.value > 90 ) {
-            artemisQueueMaxDiskUsageIcon.error(Gui.settings_webservice_artemisusage_error.toString())
-            errors.add(Gui.settings_webservice_artemisusage_error.toString())
-        } else {
-            artemisQueueMaxDiskUsageIcon.info()
-        }
 
         try {
             cronParser.parse(cleanupScheduleSetting.text).validate()
@@ -269,7 +244,6 @@ class WebserviceSettings(
      */
     override fun hasUnsavedChanges(): Boolean {
         val changes =
-                artemisQueueMaxDiskUsageSetting.value != apiProperties.artemisQueueMaxDiskUsage ||
                 databaseURLSetting.text != apiProperties.jdbcDatabaseUrl ||
                 cleanupScheduleSetting.text != apiProperties.webserviceCleanupSchedule ||
                 logDirectorySetting.file.absolutePath != apiProperties.tomcatLogsDirectory.absolutePath ||

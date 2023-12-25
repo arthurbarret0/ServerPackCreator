@@ -19,9 +19,10 @@
  */
 package de.griefed.serverpackcreator.web.modpack
 
-import de.griefed.serverpackcreator.web.NotificationService
 import de.griefed.serverpackcreator.web.customizing.RunConfigurationService
 import de.griefed.serverpackcreator.web.data.ModPackView
+import de.griefed.serverpackcreator.web.data.ServerPack
+import de.griefed.serverpackcreator.web.data.ZipResponse
 import de.griefed.serverpackcreator.web.task.TaskDetail
 import de.griefed.serverpackcreator.web.task.TaskExecutionServiceImpl
 import org.springframework.beans.factory.annotation.Autowired
@@ -40,7 +41,6 @@ import org.springframework.web.multipart.MultipartFile
 class ModpackController @Autowired constructor(
     private val modpackService: ModpackService,
     private val runConfigurationService: RunConfigurationService,
-    private val notificationService: NotificationService,
     private val taskExecutionServiceImpl: TaskExecutionServiceImpl
 ) {
 
@@ -68,7 +68,7 @@ class ModpackController @Autowired constructor(
         @RequestParam("startArgs") startArgs: String,
         @RequestParam("clientMods") clientMods: String,
         @RequestParam("whiteListMods") whiteListMods: String
-    ): ResponseEntity<String> {
+    ): ResponseEntity<ZipResponse> {
         if (file.size == 0L ||
             file.bytes.isEmpty() ||
             !file.originalFilename!!.endsWith("zip", ignoreCase = true) ||
@@ -78,13 +78,13 @@ class ModpackController @Autowired constructor(
         ) {
             return ResponseEntity.badRequest().header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
                 .body(
-                    notificationService.zipResponse(
-                        messages = listOf("Invalid size or not a ZIP-file."),
-                        timeout = 10000,
-                        icon = "error",
-                        colour = "negative",
-                        file = file.name,
-                        success = false
+                    ZipResponse(
+                        message = "Invalid size or not a ZIP-file.",
+                        success = false,
+                        modPackId = null,
+                        runConfigId = null,
+                        serverPackId = null,
+                        status = ModpackStatus.ERROR
                     )
                 )
         }
@@ -96,64 +96,84 @@ class ModpackController @Autowired constructor(
         taskExecutionServiceImpl.submitTaskInQueue(taskDetail)
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
             .body(
-                notificationService.zipResponse(
-                    messages = listOf("File is being stored and will be queued for checks."),
-                    timeout = 5000,
-                    icon = "info",
-                    colour = "positive",
-                    modpack.id.toString(),
-                    true
+                ZipResponse(
+                    message = "File is being stored and will be queued for checks.",
+                    success = true,
+                    modPackId = modpack.id,
+                    runConfigId = taskDetail.runConfiguration?.id,
+                    serverPackId = null,
+                    status = ModpackStatus.QUEUED
                 )
             )
     }
 
     @PostMapping("/generate", produces = ["application/json"])
     @ResponseBody
-    fun requestGeneration(@RequestParam("id") id: Int,
-                          @RequestParam("minecraftVersion") minecraftVersion: String,
-                          @RequestParam("modloader") modloader: String,
-                          @RequestParam("modloaderVersion") modloaderVersion: String,
-                          @RequestParam("startArgs") startArgs: String,
-                          @RequestParam("clientMods") clientMods: String,
-                          @RequestParam("whiteListMods") whiteListMods: String): ResponseEntity<String> {
+    fun requestGeneration(
+        @RequestParam("id") id: Int,
+        @RequestParam("minecraftVersion") minecraftVersion: String,
+        @RequestParam("modloader") modloader: String,
+        @RequestParam("modloaderVersion") modloaderVersion: String,
+        @RequestParam("startArgs") startArgs: String,
+        @RequestParam("clientMods") clientMods: String,
+        @RequestParam("whiteListMods") whiteListMods: String
+    ): ResponseEntity<ZipResponse> {
         val modpack = modpackService.getModpack(id)
-        if (modpack.isPresent) {
-            val taskDetail = TaskDetail(modpack.get())
-            taskDetail.modpack.status = ModpackStatus.QUEUED
-            taskDetail.runConfiguration = runConfigurationService.createRunConfig(
-                minecraftVersion, modloader, modloaderVersion, startArgs, clientMods, whiteListMods
-            )
-            taskExecutionServiceImpl.submitTaskInQueue(taskDetail)
-            return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
-                .body(
-                    notificationService.zipResponse(
-                        messages = listOf("Modpack queued."),
-                        timeout = 5000,
-                        icon = "info",
-                        colour = "positive",
-                        file = id.toString(),
-                        success = false
-                    )
-                )
-        } else {
+        if (modpack.isEmpty) {
             return ResponseEntity.badRequest().header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
                 .body(
-                    notificationService.zipResponse(
-                        messages = listOf("Modpack not found."),
-                        timeout = 10000,
-                        icon = "error",
-                        colour = "negative",
-                        file = "Not found",
-                        success = false
+                    ZipResponse(
+                        message = "Modpack not found.",
+                        success = false,
+                        modPackId = id,
+                        runConfigId = null,
+                        serverPackId = null,
+                        status = ModpackStatus.ERROR
                     )
                 )
         }
+        val taskDetail = TaskDetail(modpack.get())
+        taskDetail.modpack.status = ModpackStatus.QUEUED
+        taskDetail.runConfiguration = runConfigurationService.createRunConfig(
+            minecraftVersion, modloader, modloaderVersion, startArgs, clientMods, whiteListMods
+        )
+        var serverpack: ServerPack? = null
+        for (pack in modpack.get().serverPacks) {
+            if (pack.runConfiguration!!.id == taskDetail.runConfiguration!!.id) {
+                serverpack = pack
+            }
+        }
+        if (serverpack != null) {
+            return ResponseEntity.badRequest().header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                .body(
+                    ZipResponse(
+                        message = "Server Pack already exists for the requested ModPack and RunConfiguration.",
+                        success = false,
+                        modPackId = id,
+                        runConfigId = taskDetail.runConfiguration!!.id,
+                        serverPackId = serverpack.id,
+                        status = ModpackStatus.GENERATED
+                    )
+                )
+        }
+        taskExecutionServiceImpl.submitTaskInQueue(taskDetail)
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+            .body(
+                ZipResponse(
+                    message = "Generation of ServerPack, from existing ModPack, with different config, queued.",
+                    success = true,
+                    modPackId = id,
+                    runConfigId = taskDetail.runConfiguration?.id,
+                    serverPackId = null,
+                    status = ModpackStatus.QUEUED
+                )
+            )
     }
 
     @GetMapping("/all", produces = ["application/json"])
     @ResponseBody
     fun getAllModPacks(): ResponseEntity<List<ModPackView>> {
-        return ResponseEntity.ok().header("Content-Type", "application/json").body(
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE).body(
             modpackService.getModpacks()
         )
     }
@@ -161,7 +181,7 @@ class ModpackController @Autowired constructor(
     @GetMapping("/{id:[0-9]+}", produces = ["application/json"])
     @ResponseBody
     fun getAllModPacks(@PathVariable id: Int): ResponseEntity<ModPackView> {
-        return ResponseEntity.ok().header("Content-Type", "application/json").body(
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE).body(
             modpackService.getModpackView(id).get()
         )
     }

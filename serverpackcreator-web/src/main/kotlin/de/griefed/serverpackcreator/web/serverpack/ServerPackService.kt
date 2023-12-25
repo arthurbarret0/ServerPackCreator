@@ -43,7 +43,7 @@ import java.util.*
 @Service
 class ServerPackService @Autowired constructor(
     private val serverPackRepository: ServerPackRepository,
-    private val messageDigestInstance : MessageDigest,
+    messageDigestInstance : MessageDigest,
     apiProperties: ApiProperties,
     storageRepository: StorageRepository
 ) {

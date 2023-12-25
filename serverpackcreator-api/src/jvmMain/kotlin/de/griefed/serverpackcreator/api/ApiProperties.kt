@@ -1269,30 +1269,6 @@ actual class ApiProperties(
             }
         }
 
-    /**
-     * Maximum disk usage in percent until Artemis stops accepting new entries.
-     */
-    var artemisQueueMaxDiskUsage = 90
-        get() {
-            val usage = getIntProperty(pSpringArtemisQueueMaxDiskUsage, 90)
-            field = if (usage in 0..100) {
-                getIntProperty(pSpringArtemisQueueMaxDiskUsage, 90)
-            } else {
-                log.error("Invalid max disk usage set: $usage. Defaulting to 90")
-                90
-            }
-            return field
-        }
-        set(value) {
-            if (value in 0..100) {
-                setIntProperty(pSpringArtemisQueueMaxDiskUsage, value)
-                field = value
-                log.info("Queue max disk usage set to: $field")
-            } else {
-                log.error("Invalid max disk usage specified: $value.")
-            }
-        }
-
     var webserviceCleanupSchedule: String
         get() {
             return internalProps.getProperty("de.griefed.serverpackcreator.spring.schedules.database.cleanup")
@@ -1319,10 +1295,6 @@ actual class ApiProperties(
 
     fun defaultWebserviceDatabase(): String {
         return "jdbc\\:postgresql\\://localhost\\:5432/serverpackcreator"
-    }
-
-    fun defaultArtemisDataDirectory(): File {
-        return File(workDirectory, "artemis")
     }
 
     /**
@@ -2484,7 +2456,6 @@ actual class ApiProperties(
         log.info("Checking for pre-releases set to:   $isCheckingForPreReleasesEnabled")
         log.info("Zip-file exclusion enabled set to:  $isZipFileExclusionEnabled")
         log.info("HasteBin documents endpoint set to: $hasteBinServerUrl")
-        log.info("Queue max disk usage set to:        $artemisQueueMaxDiskUsage")
         log.info("Directories which must always be included set to: $directoriesToInclude")
         log.info("Directories which must always be excluded set to: $directoriesToExclude")
         log.info("Cleanup of already existing server packs set to:  $isServerPackCleanupEnabled")

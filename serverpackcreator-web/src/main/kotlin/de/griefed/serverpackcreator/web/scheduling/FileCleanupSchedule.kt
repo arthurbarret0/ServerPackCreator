@@ -19,18 +19,48 @@
  */
 package de.griefed.serverpackcreator.web.scheduling
 
+import de.griefed.serverpackcreator.api.ApiProperties
+import de.griefed.serverpackcreator.api.utilities.common.deleteQuietly
+import de.griefed.serverpackcreator.web.modpack.ModpackRepository
+import de.griefed.serverpackcreator.web.serverpack.ServerPackRepository
+import de.griefed.serverpackcreator.web.storage.StorageRepository
 import org.apache.logging.log4j.kotlin.cachedLoggerOf
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
+import java.io.File
+import java.nio.file.Path
+import kotlin.io.path.listDirectoryEntries
 
 @Service
-class FileCleanupSchedule {
+class FileCleanupSchedule @Autowired constructor(
+    private val modpackRepository: ModpackRepository,
+    private val serverPackRepository: ServerPackRepository,
+    private val fileStorageRepository: StorageRepository,
+    apiProperties: ApiProperties
+) {
     private val log = cachedLoggerOf(this.javaClass)
-    //TODO sync file to database
-    //TODO delete files not linked in database
+    private val modPackRoot: Path = apiProperties.modpacksDirectory.toPath()
+    private val serverPackRoot: Path = apiProperties.serverPacksDirectory.toPath()
+
     @Scheduled(cron = "\${de.griefed.serverpackcreator.spring.schedules.files.cleanup}")
     private fun cleanFiles() {
         log.info("Cleaning files...")
+        val fileIds: MutableList<Int> = mutableListOf()
+        fileIds.addAll(modpackRepository.findAll().filter { it.fileID != null }.map { it.fileID!!.toInt() })
+        fileIds.addAll(serverPackRepository.findAll().filter { it.fileID != null }.map { it.fileID!!.toInt() })
+        fileIds.addAll(fileStorageRepository.findAll().map { it.id.toInt() })
+
+        val files: MutableList<File> = mutableListOf()
+        files.addAll(modPackRoot.listDirectoryEntries().map { it.toFile() })
+        files.addAll(serverPackRoot.listDirectoryEntries().map { it.toFile() })
+
+        for (file in files) {
+            if (!fileIds.any { file.name.contains(it.toString()) }) {
+                file.deleteQuietly()
+                log.info("Deleted ${file.absolutePath} as it was not found in any repository.")
+            }
+        }
         log.info("File cleanup completed.")
     }
 }

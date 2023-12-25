@@ -47,7 +47,8 @@ class TaskExecutionServiceImpl @Autowired constructor(
     private val serverPackService: ServerPackService,
     private val configurationHandler: ConfigurationHandler,
     private val serverPackHandler: ServerPackHandler,
-    private val messageDigestInstance: MessageDigest
+    private val messageDigestInstance: MessageDigest,
+    private val eventService: EventService
 ) :
     TaskExecutionService {
     private val logger: KotlinLogger = cachedLoggerOf(this.javaClass)
@@ -86,8 +87,8 @@ class TaskExecutionServiceImpl @Autowired constructor(
      * Method to Submit Tasks in Queue
      */
     override fun submitTaskInQueue(taskDetail: TaskDetail) {
+        eventService.submit(taskDetail.modpack.id, taskDetail.serverPack?.id, taskDetail.modpack.status, "Submitted task to queue.")
         blockingQueue.add(taskDetail)
-        logger.info("Task for Server Pack : ${taskDetail.modpack.id} submitted in Queue")
     }
 
     private fun processTask(taskDetail: TaskDetail) {
@@ -110,6 +111,7 @@ class TaskExecutionServiceImpl @Autowired constructor(
     private fun syncToDatabase(taskDetail: TaskDetail) {
         if (taskDetail.modPackFile != null) {
             logger.info("Syncing ModPack ${taskDetail.modpack.id} - ${taskDetail.modpack.name} to database.")
+            eventService.submit(taskDetail.modpack.id, taskDetail.serverPack?.id, taskDetail.modpack.status, "Syncing ModPack to database.")
             modpackService.storeInDatabase(
                 taskDetail.modPackFile!!,
                 taskDetail.modpack.fileID!!,
@@ -119,10 +121,12 @@ class TaskExecutionServiceImpl @Autowired constructor(
         }
         if (taskDetail.serverPack != null && taskDetail.serverPackFile != null) {
             logger.info("Syncing ServerPack ${taskDetail.serverPack!!.id} - ${taskDetail.modpack.name} to database.")
+            eventService.submit(taskDetail.modpack.id, taskDetail.serverPack?.id, taskDetail.modpack.status, "Syncing ServerPack to database.")
             serverPackService.storeGeneration(taskDetail.serverPackFile!!, taskDetail.serverPack!!.fileID!!, taskDetail.serverPack!!.sha256!!)
             logger.info("Synced ServerPack : ${taskDetail.serverPack!!.id} - ${taskDetail.modpack.name} to database.")
         }
         Runtime.getRuntime().gc()
+        logger.info("Remaining tasks in queue: ${getQueueSize()}")
     }
 
     private fun checkModpack(taskDetail: TaskDetail) {
@@ -132,6 +136,7 @@ class TaskExecutionServiceImpl @Autowired constructor(
             throw StorageException("ModPack-file for ${taskDetail.modpack.id} not found.")
         }
         taskDetail.modpack.status = ModpackStatus.CHECKING
+        eventService.submit(taskDetail.modpack.id, taskDetail.serverPack?.id, taskDetail.modpack.status, "Checking ModPack for errors.")
         modpackService.saveModpack(taskDetail.modpack)
         val packConfig = modpackService.getPackConfigForModpack(taskDetail.modpack, taskDetail.runConfiguration!!)
         taskDetail.modPackFile = File(packConfig.modpackDir)
@@ -139,8 +144,10 @@ class TaskExecutionServiceImpl @Autowired constructor(
         if (check.allChecksPassed) {
             taskDetail.modpack.status = ModpackStatus.CHECKED
             taskDetail.packConfig = packConfig
+            eventService.submit(taskDetail.modpack.id, taskDetail.serverPack?.id, taskDetail.modpack.status, "ModPack checks passed.")
         } else {
             taskDetail.modpack.status = ModpackStatus.ERROR
+            eventService.submit(taskDetail.modpack.id, taskDetail.serverPack?.id, taskDetail.modpack.status, "ModPack checks not passed.", check.encounteredErrors)
         }
         modpackService.saveModpack(taskDetail.modpack)
         submitTaskInQueue(taskDetail)
@@ -155,6 +162,7 @@ class TaskExecutionServiceImpl @Autowired constructor(
     private fun generateFromZip(taskDetail: TaskDetail) {
         logger.info("Server Pack will be generated from uploaded, zipped, modpack : ${taskDetail.modpack.id}")
         taskDetail.modpack.status = ModpackStatus.GENERATING
+        eventService.submit(taskDetail.modpack.id, taskDetail.serverPack?.id, taskDetail.modpack.status, "Generating ServerPack.")
         modpackService.saveModpack(taskDetail.modpack)
         if (taskDetail.packConfig == null && taskDetail.runConfiguration != null) {
             taskDetail.packConfig =
@@ -171,6 +179,7 @@ class TaskExecutionServiceImpl @Autowired constructor(
             serverPackService.saveServerPack(serverPack)
             taskDetail.modpack.serverPacks.addLast(serverPack)
             taskDetail.modpack.status = ModpackStatus.GENERATED
+            eventService.submit(taskDetail.modpack.id, taskDetail.serverPack?.id, taskDetail.modpack.status, "Generated ServerPack.")
             taskDetail.serverPack = serverPack
             taskDetail.serverPackFile = serverPackZip
             //logger.info("Storing server pack : ${serverPack.id}")
@@ -179,6 +188,7 @@ class TaskExecutionServiceImpl @Autowired constructor(
             File(taskDetail.packConfig!!.modpackDir).deleteQuietly()
         } else {
             taskDetail.modpack.status = ModpackStatus.ERROR
+            eventService.submit(taskDetail.modpack.id, taskDetail.serverPack?.id, taskDetail.modpack.status, "Error generating ServerPack. Contact your admin for details.")
         }
         modpackService.saveModpack(taskDetail.modpack)
         submitTaskInQueue(taskDetail)

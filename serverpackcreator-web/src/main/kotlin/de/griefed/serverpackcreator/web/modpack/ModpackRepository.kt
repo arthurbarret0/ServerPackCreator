@@ -22,6 +22,7 @@ package de.griefed.serverpackcreator.web.modpack
 import de.griefed.serverpackcreator.web.data.ModPack
 import de.griefed.serverpackcreator.web.data.ModPackView
 import de.griefed.serverpackcreator.web.data.ServerPack
+import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 import java.util.*
@@ -29,5 +30,7 @@ import java.util.*
 @Repository
 interface ModpackRepository : JpaRepository<ModPack, Int> {
     fun findAllProjectedBy(): MutableList<ModPackView>
+    fun findAllProjectedBy(sort: Sort): MutableList<ModPackView>
+    fun findProjectedById(id: Int) : Optional<ModPackView>
     fun findByServerPacksContains(serverPack: ServerPack): Optional<ModPack>
 }

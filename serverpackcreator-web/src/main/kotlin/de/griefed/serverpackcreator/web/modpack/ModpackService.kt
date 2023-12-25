@@ -28,6 +28,7 @@ import de.griefed.serverpackcreator.web.data.RunConfiguration
 import de.griefed.serverpackcreator.web.storage.StorageRepository
 import de.griefed.serverpackcreator.web.storage.StorageSystem
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.io.File
@@ -69,8 +70,12 @@ class ModpackService @Autowired constructor(
         return modpackRepository.findById(id)
     }
 
+    fun getModpackView(id: Int): Optional<ModPackView> {
+        return modpackRepository.findProjectedById(id)
+    }
+
     fun getModpacks(): List<ModPackView> {
-        return modpackRepository.findAllProjectedBy()
+        return modpackRepository.findAllProjectedBy(Sort.by(Sort.Direction.DESC, "dateCreated"))
     }
 
     fun getPackConfigForModpack(modpack: ModPack, runConfiguration: RunConfiguration): PackConfig {
@@ -84,7 +89,7 @@ class ModpackService @Autowired constructor(
         packConfig.minecraftVersion = runConfiguration.minecraftVersion
         packConfig.modloader = runConfiguration.modloader
         packConfig.modloaderVersion = runConfiguration.modloaderVersion
-        packConfig.javaArgs = runConfiguration.startArgs.joinToString(" ")
+        packConfig.javaArgs = runConfiguration.startArgs.joinToString(" ") { it.argument }
         packConfig.isZipCreationDesired = true
         return packConfig
     }

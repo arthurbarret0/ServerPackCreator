@@ -27,6 +27,7 @@ import de.griefed.serverpackcreator.web.storage.StorageRepository
 import de.griefed.serverpackcreator.web.storage.StorageSystem
 import org.apache.logging.log4j.kotlin.cachedLoggerOf
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.domain.Sort
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import java.io.File
@@ -125,7 +126,7 @@ class ServerPackService @Autowired constructor(
      * @author Griefed
      */
     fun getServerPacks(): List<ServerPackView> {
-        return serverPackRepository.findAllProjectedBy()
+        return serverPackRepository.findAllProjectedBy(Sort.by(Sort.Direction.DESC, "dateCreated"))
     }
 
     /**

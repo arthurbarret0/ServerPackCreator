@@ -44,7 +44,7 @@ class ModPack {
     var dateCreated: Timestamp? = null
 
     @Column
-    var name: String = ""//TODO set from archive, or mainfest in ZIP, or Modrinth Project name & version name
+    var name: String = ""
 
     @Column
     var size: Int = 0

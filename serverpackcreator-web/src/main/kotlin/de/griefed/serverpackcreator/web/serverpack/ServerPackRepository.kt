@@ -21,10 +21,12 @@ package de.griefed.serverpackcreator.web.serverpack
 
 import de.griefed.serverpackcreator.web.data.ServerPack
 import de.griefed.serverpackcreator.web.data.ServerPackView
+import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
 interface ServerPackRepository : JpaRepository<ServerPack, Int> {
     fun findAllProjectedBy(): MutableList<ServerPackView>
+    fun findAllProjectedBy(sort: Sort): MutableList<ServerPackView>
 }

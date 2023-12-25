@@ -107,15 +107,23 @@ class ModpackController @Autowired constructor(
             )
     }
 
-    @GetMapping("/generate/{id:[0-9]+}", produces = ["application/json"])
+    @PostMapping("/generate", produces = ["application/json"])
     @ResponseBody
-    fun requestGeneration(@PathVariable id: Int): ResponseEntity<String> {
-        //TODO submit modpackID mcVersion, modloader, modloaderVersion, clientMods, whitelistMods
-        //TODO configuration POJO linked as list to modpack, linked as one-to-one to server pack
-        //TODO always generate server pack from configuration
+    fun requestGeneration(@RequestParam("id") id: Int,
+                          @RequestParam("minecraftVersion") minecraftVersion: String,
+                          @RequestParam("modloader") modloader: String,
+                          @RequestParam("modloaderVersion") modloaderVersion: String,
+                          @RequestParam("startArgs") startArgs: String,
+                          @RequestParam("clientMods") clientMods: String,
+                          @RequestParam("whiteListMods") whiteListMods: String): ResponseEntity<String> {
         val modpack = modpackService.getModpack(id)
         if (modpack.isPresent) {
-            taskExecutionServiceImpl.submitTaskInQueue(TaskDetail(modpack.get()))
+            val taskDetail = TaskDetail(modpack.get())
+            taskDetail.modpack.status = ModpackStatus.QUEUED
+            taskDetail.runConfiguration = runConfigurationService.createRunConfig(
+                minecraftVersion, modloader, modloaderVersion, startArgs, clientMods, whiteListMods
+            )
+            taskExecutionServiceImpl.submitTaskInQueue(taskDetail)
             return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
                 .body(
                     notificationService.zipResponse(
@@ -123,7 +131,7 @@ class ModpackController @Autowired constructor(
                         timeout = 5000,
                         icon = "info",
                         colour = "positive",
-                        file = "",
+                        file = id.toString(),
                         success = false
                     )
                 )
@@ -147,6 +155,14 @@ class ModpackController @Autowired constructor(
     fun getAllModPacks(): ResponseEntity<List<ModPackView>> {
         return ResponseEntity.ok().header("Content-Type", "application/json").body(
             modpackService.getModpacks()
+        )
+    }
+
+    @GetMapping("/{id:[0-9]+}", produces = ["application/json"])
+    @ResponseBody
+    fun getAllModPacks(@PathVariable id: Int): ResponseEntity<ModPackView> {
+        return ResponseEntity.ok().header("Content-Type", "application/json").body(
+            modpackService.getModpackView(id).get()
         )
     }
 }

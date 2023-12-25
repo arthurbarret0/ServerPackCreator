@@ -25,7 +25,7 @@ import org.hibernate.annotations.CreationTimestamp
 import java.sql.Timestamp
 
 @Entity
-class QueueEvent {
+class QueueEvent() {
 
     @Id
     @GeneratedValue
@@ -33,7 +33,7 @@ class QueueEvent {
     var id: Int = 0
 
     @Column
-    var modPackId: Int = 0
+    var modPackId: Int? = 0
 
     @Column
     var serverPackId: Int? = null
@@ -48,6 +48,52 @@ class QueueEvent {
     @Column
     var timestamp: Timestamp? = null
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     var errors: MutableList<ErrorEntry> = mutableListOf()
+
+    constructor(
+        modPackId: Int,
+        serverPackId: Int?,
+        status: ModpackStatus?,
+        message: String,
+        timestamp: Timestamp?,
+        errors: MutableList<ErrorEntry>
+    ) : this() {
+        this.modPackId = modPackId
+        this.serverPackId = serverPackId
+        this.status = status
+        this.message = message
+        this.timestamp = timestamp
+        this.errors = errors
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as QueueEvent
+
+        if (modPackId != other.modPackId) return false
+        if (serverPackId != other.serverPackId) return false
+        if (status != other.status) return false
+        if (message != other.message) return false
+        if (timestamp != other.timestamp) return false
+        if (errors != other.errors) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = modPackId.hashCode()
+        result = 31 * result + (serverPackId?.hashCode() ?: 0)
+        result = 31 * result + (status?.hashCode() ?: 0)
+        result = 31 * result + message.hashCode()
+        result = 31 * result + (timestamp?.hashCode() ?: 0)
+        result = 31 * result + errors.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return "QueueEvent(id=$id, modPackId=$modPackId, serverPackId=$serverPackId, status=$status, message='$message', timestamp=$timestamp, errors=$errors)"
+    }
 }
